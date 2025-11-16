@@ -33,28 +33,28 @@ def generate_summary_task(
 ) -> Dict[str, Any]:
     """
     Generate AI summary for a document using specified template.
-    
+
     This task orchestrates the multi-pass AI processing pipeline:
     1. Retrieves document and template from database
     2. Initializes ProcessingEngine
     3. Executes 4-pass processing with progress updates
     4. Stores results in Summary collection
     5. Updates Job status and links summary_id
-    
+
     Args:
         document_id: Document to process
         template_id: Template defining summary structure
         user_id: User who initiated the job
         job_id: Job tracking ID
-        
+
     Returns:
         Dictionary with summary_id and processing metadata
-        
+
     Raises:
         Exception: If processing fails at any stage
     """
     db = get_db()
-    
+
     try:
         # Update job status to RUNNING
         db.jobs.update_one(
@@ -67,24 +67,24 @@ def generate_summary_task(
                 }
             }
         )
-        
+
         logger.info(f"Starting summary generation: document={document_id}, template={template_id}, job={job_id}")
-        
+
         # Retrieve document
         document_service = DocumentService(db)
         document = document_service.get_document(document_id, user_id)
         if not document:
             raise ValueError(f"Document not found: {document_id}")
-        
+
         # Retrieve template
         template_service = TemplateService(db)
         template = template_service.get_template(template_id)
         if not template:
             raise ValueError(f"Template not found: {template_id}")
-        
+
         logger.info(f"Retrieved document: {document.filename} ({document.file_size} bytes)")
         logger.info(f"Using template: {template.name} with {len(template.sections)} sections")
-        
+
         # Create Summary record in PROCESSING state
         summary_id = ObjectId()
         summary_doc = SummaryInDB(
@@ -99,10 +99,10 @@ def generate_summary_task(
             metadata=None,
             started_at=datetime.utcnow()
         )
-        
+
         db.summaries.insert_one(summary_doc.model_dump(by_alias=True))
         logger.info(f"Created summary record: {summary_id}")
-        
+
         # Define progress callback to update job progress
         def update_progress(progress: int, message: str = ""):
             """Update job progress and log message."""
@@ -115,7 +115,7 @@ def generate_summary_task(
                     }
                 }
             )
-            
+
             # Update Celery task state for monitoring
             self.update_state(
                 state="PROGRESS",
@@ -126,24 +126,24 @@ def generate_summary_task(
                     "template_name": template.name
                 }
             )
-            
+
             logger.info(f"Progress: {progress}% - {message}")
-        
+
         # Initialize ProcessingEngine
         engine = ProcessingEngine(db)
-        
+
         # Execute multi-pass processing
         update_progress(5, "Starting document processing")
-        
+
         processing_result = engine.process_document(
             document_id=document_id,
             file_path=document.file_path,
             template=template,
             progress_callback=update_progress
         )
-        
+
         logger.info(f"Processing completed: {len(processing_result['sections'])} sections generated")
-        
+
         # Convert processing result sections to SummarySection models
         summary_sections = [
             SummarySection(
@@ -157,7 +157,7 @@ def generate_summary_task(
             )
             for section in processing_result["sections"]
         ]
-        
+
         # Create ProcessingMetadata
         processing_metadata = ProcessingMetadata(
             total_pages=processing_result["metadata"]["total_pages"],
@@ -168,7 +168,7 @@ def generate_summary_task(
                 processing_result["completed_at"] - processing_result["started_at"]
             ).total_seconds()
         )
-        
+
         # Update summary with results
         db.summaries.update_one(
             {"_id": summary_id},
@@ -182,9 +182,9 @@ def generate_summary_task(
                 }
             }
         )
-        
+
         logger.info(f"Summary updated successfully: {summary_id}")
-        
+
         # Update job status to COMPLETED with summary_id link
         update_progress(100, "Summary generation completed")
         db.jobs.update_one(
@@ -199,9 +199,9 @@ def generate_summary_task(
                 }
             }
         )
-        
+
         logger.info(f"Job completed successfully: {job_id}")
-        
+
         return {
             "summary_id": str(summary_id),
             "document_id": document_id,
@@ -211,10 +211,10 @@ def generate_summary_task(
             "processing_duration": processing_metadata.processing_duration_seconds,
             "status": "completed"
         }
-        
+
     except Exception as e:
         logger.error(f"Summary generation failed: {str(e)}", exc_info=True)
-        
+
         # Update job status to FAILED
         db.jobs.update_one(
             {"_id": ObjectId(job_id)},
@@ -227,7 +227,7 @@ def generate_summary_task(
                 }
             }
         )
-        
+
         # Update summary status to FAILED if it exists
         db.summaries.update_one(
             {"job_id": ObjectId(job_id)},
@@ -240,7 +240,7 @@ def generate_summary_task(
                 }
             }
         )
-        
+
         # Re-raise exception for Celery to handle
         raise
 
@@ -255,23 +255,23 @@ def regenerate_section_task(
 ) -> Dict[str, Any]:
     """
     Regenerate a single section within an existing summary.
-    
+
     Useful for iterative refinement when a section needs improvement.
-    
+
     Args:
         summary_id: Summary to update
         section_title: Title of section to regenerate
         user_id: User who initiated the job
         job_id: Job tracking ID
-        
+
     Returns:
         Dictionary with updated section metadata
-        
+
     Raises:
         Exception: If regeneration fails
     """
     db = get_db()
-    
+
     try:
         # Update job status to RUNNING
         db.jobs.update_one(
@@ -284,41 +284,41 @@ def regenerate_section_task(
                 }
             }
         )
-        
+
         logger.info(f"Regenerating section: summary={summary_id}, section={section_title}, job={job_id}")
-        
+
         # Retrieve summary
         summary = db.summaries.find_one({"_id": ObjectId(summary_id), "user_id": ObjectId(user_id)})
         if not summary:
             raise ValueError(f"Summary not found: {summary_id}")
-        
+
         # Retrieve document and template
         document_id = str(summary["document_id"])
         template_id = summary["template_id"]
-        
+
         document_service = DocumentService(db)
         document = document_service.get_document(document_id, user_id)
         if not document:
             raise ValueError(f"Document not found: {document_id}")
-        
+
         template_service = TemplateService(db)
         template = template_service.get_template(template_id)
         if not template:
             raise ValueError(f"Template not found: {template_id}")
-        
+
         # Initialize ProcessingEngine
         engine = ProcessingEngine(db)
-        
+
         # Regenerate section
         self.update_state(state="PROGRESS", meta={"progress": 50, "message": f"Regenerating {section_title}"})
-        
+
         new_section = engine.regenerate_section(
             document_id=document_id,
             file_path=document.file_path,
             template=template,
             section_title=section_title
         )
-        
+
         # Convert to SummarySection
         updated_section = SummarySection(
             title=new_section["title"],
@@ -329,7 +329,7 @@ def regenerate_section_task(
             word_count=new_section["word_count"],
             generated_at=new_section["generated_at"]
         )
-        
+
         # Update section in summary
         db.summaries.update_one(
             {"_id": ObjectId(summary_id), "sections.title": section_title},
@@ -340,7 +340,7 @@ def regenerate_section_task(
                 }
             }
         )
-        
+
         # Update job status to COMPLETED
         db.jobs.update_one(
             {"_id": ObjectId(job_id)},
@@ -353,9 +353,9 @@ def regenerate_section_task(
                 }
             }
         )
-        
+
         logger.info(f"Section regenerated successfully: {section_title}")
-        
+
         return {
             "summary_id": summary_id,
             "section_title": section_title,
@@ -363,10 +363,10 @@ def regenerate_section_task(
             "source_chunks": updated_section.source_chunks,
             "status": "completed"
         }
-        
+
     except Exception as e:
         logger.error(f"Section regeneration failed: {str(e)}", exc_info=True)
-        
+
         # Update job status to FAILED
         db.jobs.update_one(
             {"_id": ObjectId(job_id)},
@@ -379,5 +379,5 @@ def regenerate_section_task(
                 }
             }
         )
-        
+
         raise

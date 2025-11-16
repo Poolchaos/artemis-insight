@@ -112,6 +112,7 @@ services:
 
     volumes:
       - ./backend/app:/app/app
+      - ./example-file-upload:/app/example-file-upload
     depends_on:
       mongodb:
         condition: service_healthy
@@ -167,6 +168,7 @@ services:
 
     volumes:
       - ./backend/app:/app/app
+      - ./example-file-upload:/app/example-file-upload
     depends_on:
       mongodb:
         condition: service_healthy

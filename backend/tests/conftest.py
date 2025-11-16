@@ -82,3 +82,38 @@ def access_token(test_user):
     """Create access token for test user."""
     from app.utils.auth import create_access_token
     return create_access_token(str(test_user.id))
+
+
+@pytest.fixture
+async def admin_user(test_db):
+    """Create a test admin user."""
+    from app.services.user_service import UserService
+    from app.models.user import UserCreate, UserInDB
+    from bson import ObjectId
+
+    user_service = UserService(test_db)
+    user_data = UserCreate(
+        email="admin@example.com",
+        name="Admin User",
+        password="adminpass123"
+    )
+    admin = await user_service.create_user(user_data)
+
+    # Manually set is_admin to True in the database
+    await test_db.users.update_one(
+        {"_id": ObjectId(admin.id)},
+        {"$set": {"is_admin": True}}
+    )
+
+    # Fetch updated user
+    updated_user = await test_db.users.find_one({"_id": ObjectId(admin.id)})
+    # Convert _id to string for UserInDB
+    updated_user["_id"] = str(updated_user["_id"])
+    return UserInDB(**updated_user)
+
+
+@pytest.fixture
+def admin_token(admin_user):
+    """Create access token for admin user."""
+    from app.utils.auth import create_access_token
+    return create_access_token(str(admin_user.id))

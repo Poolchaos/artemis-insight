@@ -6,10 +6,11 @@ python-multipart==0.0.12
 # Pydantic for data validation
 pydantic==2.9.2
 pydantic-settings==2.6.0
+email-validator==2.2.0
 
 # Database
 motor==3.6.0
-pymongo==4.10.1
+pymongo==4.9.1
 
 # S3-compatible storage
 boto3==1.35.58

@@ -19,11 +19,14 @@ def event_loop():
 @pytest.fixture
 async def test_db() -> AsyncGenerator:
     """Provide test database instance."""
-    client = AsyncIOMotorClient("mongodb://admin:testpass@mongodb:27017")
+    client = AsyncIOMotorClient("mongodb://admin:devpassword123@mongodb:27017/?authSource=admin")
     db = client.artemis_insight_test
 
     yield db
 
-    # Cleanup
-    await client.drop_database("artemis_insight_test")
+    # Cleanup - drop collections instead of database to avoid auth issues
+    collections = await db.list_collection_names()
+    for collection in collections:
+        await db.drop_collection(collection)
+
     client.close()

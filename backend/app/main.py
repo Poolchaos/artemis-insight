@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 
 from app.config import settings
 from app.database import db_manager
+from app.routes import auth
 
 
 @asynccontextmanager
@@ -43,6 +44,9 @@ def create_application() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    # Register routers
+    application.include_router(auth.router, prefix="/api")
 
     # Health check endpoint
     @application.get("/health")

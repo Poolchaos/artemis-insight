@@ -32,16 +32,15 @@ from app.models.job import (
 )
 
 from app.models.summary import (
+    SummaryStatus,
+    SummarySection,
+    ProcessingMetadata,
     SummaryBase,
     SummaryCreate,
+    SummaryUpdate,
     SummaryInDB,
     SummaryResponse,
-    TemplateField,
-    TemplateBase,
-    TemplateCreate,
-    TemplateUpdate,
-    TemplateInDB,
-    TemplateResponse
+    SummaryListItem
 )
 
 from app.models.embedding import (
@@ -89,16 +88,15 @@ __all__ = [
     "JobResponse",
 
     # Summary models
+    "SummaryStatus",
+    "SummarySection",
+    "ProcessingMetadata",
     "SummaryBase",
     "SummaryCreate",
+    "SummaryUpdate",
     "SummaryInDB",
     "SummaryResponse",
-    "TemplateField",
-    "TemplateBase",
-    "TemplateCreate",
-    "TemplateUpdate",
-    "TemplateInDB",
-    "TemplateResponse",
+    "SummaryListItem",
 
     # Embedding models
     "EmbeddingBase",

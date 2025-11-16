@@ -16,6 +16,7 @@ class JobType(str, Enum):
     EXTRACT = "extract"
     SUMMARIZE = "summarize"
     EMBED = "embed"
+    REGENERATE_SECTION = "regenerate_section"
 
 
 class JobStatus(str, Enum):
@@ -39,6 +40,7 @@ class JobCreate(JobBase):
     """Schema for creating a new job."""
     user_id: str = Field(..., description="User ID who initiated the job")
     document_id: str = Field(..., description="Associated document ID")
+    template_id: Optional[str] = Field(default=None, description="Template ID for summarization jobs")
     celery_task_id: Optional[str] = Field(default=None, description="Celery task ID")
 
     @field_validator('user_id', 'document_id')
@@ -46,6 +48,14 @@ class JobCreate(JobBase):
     def validate_object_ids(cls, v: str) -> str:
         """Validate IDs are valid ObjectIds."""
         PyObjectId.validate(v, None)
+        return v
+
+    @field_validator('template_id')
+    @classmethod
+    def validate_template_id(cls, v: Optional[str]) -> Optional[str]:
+        """Validate template_id if provided."""
+        if v is not None:
+            PyObjectId.validate(v, None)
         return v
 
 
@@ -62,6 +72,8 @@ class JobInDB(JobBase):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     user_id: PyObjectId = Field(..., description="User ID who initiated the job")
     document_id: PyObjectId = Field(..., description="Associated document ID")
+    template_id: Optional[PyObjectId] = Field(default=None, description="Template ID for summarization jobs")
+    summary_id: Optional[PyObjectId] = Field(default=None, description="Generated summary ID (set when completed)")
     celery_task_id: Optional[str] = Field(default=None, description="Celery task ID")
     started_at: datetime = Field(default_factory=datetime.utcnow)
     completed_at: Optional[datetime] = None
@@ -79,6 +91,8 @@ class JobResponse(BaseModel):
     id: str = Field(..., description="Job ID")
     user_id: str = Field(..., description="User ID")
     document_id: str = Field(..., description="Document ID")
+    template_id: Optional[str] = Field(default=None, description="Template ID")
+    summary_id: Optional[str] = Field(default=None, description="Summary ID (when completed)")
     job_type: JobType
     status: JobStatus
     progress: int

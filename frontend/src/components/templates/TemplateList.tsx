@@ -181,7 +181,7 @@ export function TemplateList() {
                 </p>
 
                 <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                  <span>{template.fields?.length || 0} sections</span>
+                  <span>{template.sections?.length || template.fields?.length || 0} sections</span>
                   {!template.is_system && (
                     <DocumentDuplicateIcon className="h-4 w-4" />
                   )}

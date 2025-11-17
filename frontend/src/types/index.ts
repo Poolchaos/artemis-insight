@@ -164,12 +164,14 @@ export interface Template {
 export interface CreateTemplateRequest {
   name: string;
   description: string;
+  target_length: string;
   sections: TemplateSection[];
 }
 
 export interface UpdateTemplateRequest {
   name?: string;
   description?: string;
+  target_length?: string;
   sections?: TemplateSection[];
 }
 

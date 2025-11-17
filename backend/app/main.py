@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI):
 
     # Seed default templates
     try:
-        db = await anext(get_db())
+        db = db_manager.get_database()
         template_service = TemplateService(db)
         # Use a fixed system ObjectId for seeding
         system_user_id = str(ObjectId("000000000000000000000000"))

@@ -113,18 +113,24 @@ export function TemplateForm({ templateId, mode }: TemplateFormProps) {
         await createTemplate({
           name: name.trim(),
           description: description.trim(),
-          sections: sections.map(s => ({
-            name: (s.name || s.title || '').trim(),
-            prompt: (s.prompt || s.guidance_prompt || '').trim()
+          target_length: '5-10 pages', // Default value
+          sections: sections.map((s, idx) => ({
+            title: (s.name || s.title || '').trim(),
+            guidance_prompt: (s.prompt || s.guidance_prompt || '').trim(),
+            order: idx + 1,
+            required: true
           }))
         });
       } else if (mode === 'edit' && templateId) {
         await updateTemplate(templateId, {
           name: name.trim(),
           description: description.trim(),
-          sections: sections.map(s => ({
-            name: (s.name || s.title || '').trim(),
-            prompt: (s.prompt || s.guidance_prompt || '').trim()
+          target_length: '5-10 pages', // Default value
+          sections: sections.map((s, idx) => ({
+            title: (s.name || s.title || '').trim(),
+            guidance_prompt: (s.prompt || s.guidance_prompt || '').trim(),
+            order: idx + 1,
+            required: true
           }))
         });
       }

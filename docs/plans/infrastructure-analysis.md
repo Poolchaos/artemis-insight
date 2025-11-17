@@ -19,7 +19,7 @@
 | `tm-sanity-prod-network` | `9a6f060c7b88` | Unknown | TM-Sanity application |
 | `app_tm-prod-network` | `4dbf2897de87` | Unknown | Legacy app network |
 
-**Decision**: Create new `artemis-insight-net` network with subnet `172.21.0.0/16` to avoid conflicts.
+**Decision**: Create new `artemis-insight-net` network with subnet `172.22.0.0/16` to avoid conflicts (172.21.0.0/16 is used by tm-sanity-prod-network).
 
 ### Running Containers
 
@@ -127,7 +127,7 @@
 
 **Docker Network:**
 - Name: `artemis-insight-net`
-- Subnet: `172.21.0.0/16`
+- Subnet: `172.22.0.0/16`
 - Driver: bridge
 
 **Containers:**

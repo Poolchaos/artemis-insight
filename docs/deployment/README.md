@@ -13,7 +13,7 @@ Comprehensive infrastructure analysis completed. Server environment documented:
 ### 1. Production Configuration
 - ✅ `docker-compose.prod.yml` - Production container orchestration
 - ✅ Port allocations: Frontend (3003), Backend (8002), MongoDB (27018), Redis (6381), MinIO (9002-9003)
-- ✅ Dedicated network: `artemis-insight-net` (172.21.0.0/16)
+- ✅ Dedicated network: `artemis-insight-net` (172.22.0.0/16)
 - ✅ Resource limits defined to prevent memory exhaustion
 
 ### 2. Jenkins Pipelines

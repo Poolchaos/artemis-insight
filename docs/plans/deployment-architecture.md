@@ -15,7 +15,7 @@
 ## Network Architecture
 
 ```
-artemis-insight-net (172.21.0.0/16)
+artemis-insight-net (172.22.0.0/16)
 ├── artemis-insight-mongodb:27017
 ├── artemis-insight-redis:6379
 ├── artemis-insight-minio:9000,9001
@@ -157,7 +157,7 @@ depends_on: [backend]
 
 ```bash
 # 1. Create Docker network
-docker network create artemis-insight-net --subnet 172.21.0.0/16
+docker network create artemis-insight-net --subnet 172.22.0.0/16
 
 # 2. Create volumes
 docker volume create artemis-insight-mongodb-data

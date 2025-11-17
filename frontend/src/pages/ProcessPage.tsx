@@ -19,6 +19,7 @@ export default function ProcessPage() {
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isProcessingModalOpen, setIsProcessingModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState<{
     title: string;
     message: string;
@@ -58,6 +59,7 @@ export default function ProcessPage() {
     if (!canProcess) return;
 
     setIsProcessing(true);
+    setIsProcessingModalOpen(true);
     setCurrentJob(null);
     setProcessingStage('Starting...');
 
@@ -117,6 +119,7 @@ export default function ProcessPage() {
       setIsModalOpen(true);
     } finally {
       setIsProcessing(false);
+      setIsProcessingModalOpen(false);
       setCurrentJob(null);
       setProcessingStage('');
     }
@@ -296,78 +299,74 @@ export default function ProcessPage() {
         </Card>
       )}
 
-      {/* Processing Indicator with Real-time Progress */}
-      {isProcessing && (
-        <Card>
-          <CardContent className="p-8">
-            <div className="flex flex-col items-center justify-center">
-              {/* Animated spinner */}
-              <div className="relative w-20 h-20 mb-6">
-                <div className="absolute inset-0 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
-                <div className="absolute inset-0 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
-                {/* Progress percentage in center */}
-                {currentJob && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      {currentJob.progress}%
-                    </span>
-                  </div>
-                )}
+      {/* Processing Modal */}
+      <Modal
+        isOpen={isProcessingModalOpen}
+        onClose={() => {}} // Prevent closing during processing
+        title="Analyzing Document"
+      >
+        <div className="flex flex-col items-center justify-center py-4">
+          {/* Animated spinner */}
+          <div className="relative w-20 h-20 mb-6">
+            <div className="absolute inset-0 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+            {/* Progress percentage in center */}
+            {currentJob && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  {currentJob.progress}%
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Stage message */}
+          <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
+            {processingStage}
+          </p>
+
+          {/* Progress bar */}
+          {currentJob && (
+            <div className="w-full">
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                <div
+                  className="bg-blue-600 dark:bg-blue-500 h-2.5 rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${currentJob.progress}%` }}
+                />
               </div>
 
-              {/* Progress title */}
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                Analyzing Document
-              </h3>
-
-              {/* Stage message */}
-              <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
-                {processingStage}
-              </p>
-
-              {/* Progress bar */}
-              {currentJob && (
-                <div className="w-full max-w-md">
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
-                    <div
-                      className="bg-blue-600 dark:bg-blue-500 h-2.5 rounded-full transition-all duration-500 ease-out"
-                      style={{ width: `${currentJob.progress}%` }}
-                    />
-                  </div>
-
-                  {/* Job details */}
-                  <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 text-center space-y-1">
-                    <div>Status: <span className="font-medium">{currentJob.status}</span></div>
-                    <div>Document: <span className="font-medium">{selectedDocument?.filename}</span></div>
-                    <div>Template: <span className="font-medium">{selectedTemplate?.name}</span></div>
-                  </div>
-                </div>
-              )}
-
-              {/* Cancel button */}
-              <div className="mt-6">
-                <Button
-                  variant="outline"
-                  onClick={async () => {
-                    if (currentJob) {
-                      try {
-                        await jobService.cancelJob(currentJob.id);
-                      } catch (error) {
-                        console.error('Failed to cancel job:', error);
-                      }
-                    }
-                    setIsProcessing(false);
-                    setCurrentJob(null);
-                  }}
-                  size="sm"
-                >
-                  Cancel
-                </Button>
+              {/* Job details */}
+              <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 text-center space-y-1">
+                <div>Status: <span className="font-medium">{currentJob.status}</span></div>
+                <div>Document: <span className="font-medium">{selectedDocument?.filename}</span></div>
+                <div>Template: <span className="font-medium">{selectedTemplate?.name}</span></div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+
+          {/* Cancel button */}
+          <div className="mt-6">
+            <Button
+              variant="outline"
+              onClick={async () => {
+                if (currentJob) {
+                  try {
+                    await jobService.cancelJob(currentJob.id);
+                  } catch (error) {
+                    console.error('Failed to cancel job:', error);
+                  }
+                }
+                setIsProcessing(false);
+                setIsProcessingModalOpen(false);
+                setCurrentJob(null);
+              }}
+              size="sm"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Result Modal */}
       <Modal

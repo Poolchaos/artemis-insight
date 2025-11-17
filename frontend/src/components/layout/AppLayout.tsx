@@ -4,7 +4,6 @@ import {
   HomeIcon,
   DocumentTextIcon,
   RectangleStackIcon,
-  MagnifyingGlassIcon,
   SparklesIcon,
   DocumentCheckIcon,
   ArrowRightOnRectangleIcon,

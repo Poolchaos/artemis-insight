@@ -1,5 +1,8 @@
 # Artemis Insight
 
+# Documentation (local only)
+docs/
+
 # Environment files
 .env
 .env.local

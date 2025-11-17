@@ -39,7 +39,9 @@ def create_application() -> FastAPI:
     # CORS middleware
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"] if settings.debug else ["https://index.serelo.artemisinnovations.co.za"],
+        allow_origins=["*"] if settings.debug else [
+            "https://app.insights.artemisinnovations.co.za"
+        ],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

@@ -43,7 +43,7 @@ export function DocumentViewer() {
 
     try {
       const content = await exportSummary(currentSummary.id);
-      
+
       // Create a blob and download
       const blob = new Blob([content], { type: 'text/plain' });
       const url = window.URL.createObjectURL(blob);
@@ -227,7 +227,7 @@ export function DocumentViewer() {
               <CardContent className="py-12 text-center">
                 <Spinner className="mx-auto mb-4" />
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {currentDocument.status === 'processing' 
+                  {currentDocument.status === 'processing'
                     ? 'Summary is being generated...'
                     : currentDocument.status === 'pending'
                     ? 'Document is queued for processing...'

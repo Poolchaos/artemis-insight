@@ -7,7 +7,7 @@ interface SummaryState {
   currentSummary: Summary | null;
   isLoading: boolean;
   error: string | null;
-  
+
   // Actions
   fetchSummary: (documentId: string) => Promise<void>;
   fetchSummaryById: (summaryId: string) => Promise<void>;
@@ -28,18 +28,18 @@ export const useSummaryStore = create<SummaryState>((set, get) => ({
       const { summaries } = get();
       const newSummaries = new Map(summaries);
       newSummaries.set(documentId, summary);
-      set({ 
+      set({
         summaries: newSummaries,
         currentSummary: summary,
-        isLoading: false 
+        isLoading: false
       });
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error && 'response' in error 
+      const errorMessage = error instanceof Error && 'response' in error
         ? (error as any).response?.data?.detail || 'Failed to fetch summary'
         : 'Failed to fetch summary';
-      set({ 
+      set({
         error: errorMessage,
-        isLoading: false 
+        isLoading: false
       });
     }
   },
@@ -50,12 +50,12 @@ export const useSummaryStore = create<SummaryState>((set, get) => ({
       const summary = await summaryService.getSummaryById(summaryId);
       set({ currentSummary: summary, isLoading: false });
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error && 'response' in error 
+      const errorMessage = error instanceof Error && 'response' in error
         ? (error as any).response?.data?.detail || 'Failed to fetch summary'
         : 'Failed to fetch summary';
-      set({ 
+      set({
         error: errorMessage,
-        isLoading: false 
+        isLoading: false
       });
     }
   },
@@ -67,12 +67,12 @@ export const useSummaryStore = create<SummaryState>((set, get) => ({
       set({ isLoading: false });
       return content;
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error && 'response' in error 
+      const errorMessage = error instanceof Error && 'response' in error
         ? (error as any).response?.data?.detail || 'Failed to export summary'
         : 'Failed to export summary';
-      set({ 
+      set({
         error: errorMessage,
-        isLoading: false 
+        isLoading: false
       });
       throw error;
     }

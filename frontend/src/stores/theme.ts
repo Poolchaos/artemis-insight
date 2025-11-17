@@ -15,13 +15,21 @@ export const useThemeStore = create<ThemeStore>()(
         set((state) => {
           const newTheme = state.theme === 'light' ? 'dark' : 'light';
           if (typeof document !== 'undefined') {
-            document.documentElement.classList.toggle('dark', newTheme === 'dark');
+            if (newTheme === 'dark') {
+              document.documentElement.classList.add('dark');
+            } else {
+              document.documentElement.classList.remove('dark');
+            }
           }
           return { theme: newTheme };
         }),
       setTheme: (theme) => {
         if (typeof document !== 'undefined') {
-          document.documentElement.classList.toggle('dark', theme === 'dark');
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
         }
         set({ theme });
       },
@@ -31,7 +39,11 @@ export const useThemeStore = create<ThemeStore>()(
       onRehydrateStorage: () => (state) => {
         // Apply theme after hydration
         if (state && typeof document !== 'undefined') {
-          document.documentElement.classList.toggle('dark', state.theme === 'dark');
+          if (state.theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
         }
       },
     }

@@ -5,6 +5,10 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import DocumentsPage from './pages/DocumentsPage';
+import TemplatesPage from './pages/TemplatesPage';
+import TemplateCreatePage from './pages/TemplateCreatePage';
+import TemplateEditPage from './pages/TemplateEditPage';
+import TemplateViewPage from './pages/TemplateViewPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import AppLayout from './components/layout/AppLayout';
 import { useAuthStore } from './stores/auth.store';
@@ -71,10 +75,40 @@ function App() {
               element={
                 <ProtectedRoute>
                   <AppLayout>
-                    <div className="text-center py-12">
-                      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Templates</h1>
-                      <p className="text-gray-600 dark:text-gray-400 mt-2">Template management coming next...</p>
-                    </div>
+                    <TemplatesPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/templates/create"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <TemplateCreatePage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/templates/:id"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <TemplateViewPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/templates/:id/edit"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <TemplateEditPage />
                   </AppLayout>
                 </ProtectedRoute>
               }

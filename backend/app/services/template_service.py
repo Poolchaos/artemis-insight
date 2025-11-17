@@ -279,7 +279,8 @@ class TemplateService:
                 "updated_at": now,
                 "is_active": True,
                 "is_default": True,
-                "version": 1
+                "version": 1,
+                "usage_count": 0
             })
 
             result = await self.collection.insert_one(template_dict)

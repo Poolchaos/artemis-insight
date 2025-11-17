@@ -7,8 +7,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.config import settings
-from app.database import db_manager
+from app.database import db_manager, get_db
 from app.routes import auth, documents, templates, summaries, jobs
+from app.services.template_service import TemplateService
+from bson import ObjectId
 
 
 @asynccontextmanager
@@ -19,6 +21,18 @@ async def lifespan(app: FastAPI):
     """
     # Startup
     await db_manager.connect()
+
+    # Seed default templates
+    try:
+        db = await anext(get_db())
+        template_service = TemplateService(db)
+        # Use a fixed system ObjectId for seeding
+        system_user_id = str(ObjectId("000000000000000000000000"))
+        await template_service.seed_default_templates(created_by=system_user_id)
+        print("✅ Default templates seeded successfully")
+    except Exception as e:
+        print(f"⚠️ Warning: Could not seed templates: {e}")
+
     yield
     # Shutdown
     await db_manager.disconnect()

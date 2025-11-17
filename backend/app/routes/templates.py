@@ -24,16 +24,16 @@ def get_template_service(db: AsyncIOMotorDatabase = Depends(get_db)) -> Template
 @router.post("", response_model=TemplateResponse, status_code=status.HTTP_201_CREATED)
 async def create_template(
     template_data: TemplateCreate,
-    current_user: UserInDB = Depends(get_current_admin_user),
+    current_user: UserInDB = Depends(get_current_user),
     template_service: TemplateService = Depends(get_template_service)
 ):
     """
-    Create a new template. Admin only.
+    Create a new template.
 
     Creates a new document analysis template with sections, processing strategy,
     and guidance prompts for AI summarization.
 
-    **Permissions:** Admin only
+    **Permissions:** Any authenticated user
     """
     return await template_service.create_template(
         template_data=template_data,
@@ -104,16 +104,16 @@ async def get_template(
 async def update_template(
     template_id: str,
     template_data: TemplateUpdate,
-    current_user: UserInDB = Depends(get_current_admin_user),
+    current_user: UserInDB = Depends(get_current_user),
     template_service: TemplateService = Depends(get_template_service)
 ):
     """
-    Update a template. Admin only.
+    Update a template.
 
     Updates template configuration including sections, prompts, and processing strategy.
     Version number is automatically incremented on each update.
 
-    **Permissions:** Admin only
+    **Permissions:** Any authenticated user
     """
     return await template_service.update_template(
         template_id=template_id,
@@ -125,16 +125,16 @@ async def update_template(
 @router.delete("/{template_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_template(
     template_id: str,
-    current_user: UserInDB = Depends(get_current_admin_user),
+    current_user: UserInDB = Depends(get_current_user),
     template_service: TemplateService = Depends(get_template_service)
 ):
     """
-    Delete a template (soft delete). Admin only.
+    Delete a template (soft delete).
 
     Sets the template's is_active flag to False. The template remains
     in the database but won't appear in listings or be selectable.
 
-    **Permissions:** Admin only
+    **Permissions:** Any authenticated user
     """
     await template_service.delete_template(
         template_id=template_id,

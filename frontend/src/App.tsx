@@ -4,6 +4,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
+import DocumentsPage from './pages/DocumentsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import AppLayout from './components/layout/AppLayout';
 import { useAuthStore } from './stores/auth.store';
@@ -59,10 +60,7 @@ function App() {
               element={
                 <ProtectedRoute>
                   <AppLayout>
-                    <div className="text-center py-12">
-                      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Documents</h1>
-                      <p className="text-gray-600 dark:text-gray-400 mt-2">Document management coming next...</p>
-                    </div>
+                    <DocumentsPage />
                   </AppLayout>
                 </ProtectedRoute>
               }

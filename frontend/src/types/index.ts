@@ -35,7 +35,20 @@ export interface Document {
   filename: string;
   s3_key: string;
   page_count: number;
+  status?: 'pending' | 'processing' | 'completed' | 'failed';
   uploaded_at: string;
+}
+
+export interface DocumentUploadResponse {
+  document: Document;
+  job_id: string;
+}
+
+export interface DocumentListResponse {
+  items: Document[];
+  total: number;
+  skip: number;
+  limit: number;
 }
 
 export interface Job {
@@ -65,6 +78,33 @@ export interface Template {
   fields: string[];
   prompt_template: string;
   is_system: boolean;
+  user_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface TemplateSection {
+  name: string;
+  prompt: string;
+}
+
+export interface CreateTemplateRequest {
+  name: string;
+  description: string;
+  sections: TemplateSection[];
+}
+
+export interface UpdateTemplateRequest {
+  name?: string;
+  description?: string;
+  sections?: TemplateSection[];
+}
+
+export interface TemplateListResponse {
+  items: Template[];
+  total: number;
+  skip: number;
+  limit: number;
 }
 
 export interface SnippetResult {

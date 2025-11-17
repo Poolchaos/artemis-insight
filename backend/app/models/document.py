@@ -3,7 +3,7 @@ Document model for PDF document metadata and processing status.
 """
 
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from enum import Enum
 from pydantic import BaseModel, Field, field_validator
 
@@ -85,4 +85,36 @@ class DocumentResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        json_encoders = {datetime: lambda v: v.isoformat()}
+
+
+# ============================================================================
+# Semantic Search Models
+# ============================================================================
+
+class SearchQuery(BaseModel):
+    """Schema for document search query."""
+    query: str = Field(..., min_length=1, max_length=500, description="Natural language search query")
+    top_k: int = Field(default=5, ge=1, le=20, description="Number of results to return")
+    min_similarity: float = Field(default=0.7, ge=0.0, le=1.0, description="Minimum similarity threshold")
+
+
+class SearchResult(BaseModel):
+    """Schema for a single search result chunk."""
+    chunk_id: str = Field(..., description="Unique chunk identifier")
+    content: str = Field(..., description="Chunk text content")
+    page_number: int = Field(..., description="Page number in document")
+    similarity_score: float = Field(..., description="Cosine similarity score (0-1)")
+    metadata: Optional[Dict[str, Any]] = Field(default=None, description="Additional chunk metadata")
+
+
+class SearchResponse(BaseModel):
+    """Schema for search results response."""
+    document_id: str = Field(..., description="Document ID that was searched")
+    query: str = Field(..., description="Original search query")
+    results: List[SearchResult] = Field(..., description="List of matching chunks")
+    total_chunks_searched: int = Field(..., description="Total number of chunks in document")
+    search_duration_ms: float = Field(..., description="Search execution time in milliseconds")
+
+    class Config:
         json_encoders = {datetime: lambda v: v.isoformat()}

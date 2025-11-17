@@ -9,7 +9,15 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.database import get_db
 from app.models.user import UserInDB
-from app.models.document import DocumentCreate, DocumentResponse, DocumentStatus, DocumentUpdate
+from app.models.document import (
+    DocumentCreate,
+    DocumentResponse,
+    DocumentStatus,
+    DocumentUpdate,
+    SearchQuery,
+    SearchResponse,
+    SearchResult
+)
 from app.middleware.auth import get_current_user
 from app.services.document_service import DocumentService
 from app.services.minio_service import minio_service
@@ -214,6 +222,123 @@ async def download_document(
         )
 
 
+@router.post("/{document_id}/search", response_model=SearchResponse)
+async def search_document(
+    document_id: str,
+    search_query: SearchQuery,
+    current_user: UserInDB = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """
+    Search document using natural language query.
+
+    Uses semantic search with embeddings to find relevant passages:
+    - Converts query to embedding vector
+    - Compares with all document chunk embeddings
+    - Returns top-k most similar chunks with scores
+
+    **Example queries:**
+    - "What are the project costs?"
+    - "Describe the environmental impact"
+    - "What is the timeline for implementation?"
+
+    **Response includes:**
+    - Matching text passages
+    - Page numbers
+    - Similarity scores (0-1)
+    - Search execution time
+    """
+    import time
+    from app.services.embedding_service import EmbeddingService, cosine_similarity
+
+    start_time = time.time()
+
+    # Verify document exists and belongs to user
+    document_service = DocumentService(db)
+    document = await document_service.get_document_by_user(document_id, str(current_user.id))
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found"
+        )
+
+    # Verify document processing is complete
+    if document.status != DocumentStatus.COMPLETED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Document is not ready for search. Status: {document.status.value}"
+        )
+
+    # Get all chunks for this document
+    chunks_collection = db.chunks
+    chunks_cursor = chunks_collection.find({"document_id": document.id})
+    chunks = await chunks_cursor.to_list(length=None)
+
+    if not chunks:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No chunks found for this document. Document may not be properly processed."
+        )
+
+    # Generate query embedding
+    embedding_service = EmbeddingService()
+    try:
+        query_embedding = await embedding_service.generate_embedding(search_query.query)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate query embedding: {str(e)}"
+        )
+
+    # Calculate similarity scores for all chunks
+    scored_chunks = []
+    for chunk in chunks:
+        if "embedding" not in chunk or not chunk["embedding"]:
+            continue
+
+        similarity = cosine_similarity(query_embedding, chunk["embedding"])
+
+        # Filter by minimum similarity threshold
+        if similarity >= search_query.min_similarity:
+            scored_chunks.append({
+                "chunk": chunk,
+                "similarity": similarity
+            })
+
+    # Sort by similarity score (highest first)
+    scored_chunks.sort(key=lambda x: x["similarity"], reverse=True)
+
+    # Take top-k results
+    top_chunks = scored_chunks[:search_query.top_k]
+
+    # Format results
+    search_results = [
+        SearchResult(
+            chunk_id=str(item["chunk"]["_id"]),
+            content=item["chunk"]["content"],
+            page_number=item["chunk"]["page_number"],
+            similarity_score=round(item["similarity"], 4),
+            metadata={
+                "chunk_index": item["chunk"].get("chunk_index"),
+                "word_count": len(item["chunk"]["content"].split())
+            }
+        )
+        for item in top_chunks
+    ]
+
+    end_time = time.time()
+    search_duration_ms = (end_time - start_time) * 1000
+
+    return SearchResponse(
+        document_id=document_id,
+        query=search_query.query,
+        results=search_results,
+        total_chunks_searched=len(chunks),
+        search_duration_ms=round(search_duration_ms, 2)
+    )
+
+
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_document(
     document_id: str,
@@ -236,3 +361,4 @@ async def delete_document(
         )
 
     return None
+

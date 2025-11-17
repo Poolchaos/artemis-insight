@@ -6,6 +6,7 @@ for semantic search and multi-pass AI processing.
 """
 
 import asyncio
+import math
 from typing import List, Dict, Any, Optional
 from openai import AsyncOpenAI
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -20,6 +21,35 @@ from app.models.embedding import (
     SimilarChunk
 )
 from app.services.pdf_processor import DocumentChunk
+
+
+def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
+    """
+    Compute cosine similarity between two vectors.
+
+    Args:
+        vec1: First vector
+        vec2: Second vector
+
+    Returns:
+        Similarity score between 0 and 1
+    """
+    # Dot product
+    dot_product = sum(a * b for a, b in zip(vec1, vec2))
+
+    # Magnitudes
+    magnitude1 = math.sqrt(sum(a * a for a in vec1))
+    magnitude2 = math.sqrt(sum(b * b for b in vec2))
+
+    # Avoid division by zero
+    if magnitude1 == 0 or magnitude2 == 0:
+        return 0.0
+
+    # Cosine similarity
+    similarity = dot_product / (magnitude1 * magnitude2)
+
+    # Clamp to [0, 1] range (should already be in [-1, 1])
+    return max(0.0, min(1.0, similarity))
 
 
 class EmbeddingService:
@@ -186,7 +216,7 @@ class EmbeddingService:
         # Compute cosine similarity for each embedding
         results = []
         for emb in embeddings:
-            similarity = self._cosine_similarity(query_vector, emb["embedding_vector"])
+            similarity = cosine_similarity(query_vector, emb["embedding_vector"])
 
             if similarity >= query.min_similarity:
                 results.append({
@@ -297,3 +327,4 @@ class EmbeddingService:
             query["document_id"] = ObjectId(document_id)
 
         return await self.collection.count_documents(query)
+

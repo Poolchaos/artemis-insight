@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import DocumentsPage from './pages/DocumentsPage';
+import DocumentViewPage from './pages/DocumentViewPage';
 import TemplatesPage from './pages/TemplatesPage';
 import TemplateCreatePage from './pages/TemplateCreatePage';
 import TemplateEditPage from './pages/TemplateEditPage';
@@ -65,6 +66,17 @@ function App() {
                 <ProtectedRoute>
                   <AppLayout>
                     <DocumentsPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/documents/:id"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <DocumentViewPage />
                   </AppLayout>
                 </ProtectedRoute>
               }

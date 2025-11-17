@@ -265,7 +265,17 @@ class TemplateService:
             })
 
             if existing:
-                # Update if exists
+                # Update existing template to ensure it has all required fields
+                update_fields = {}
+                if "usage_count" not in existing:
+                    update_fields["usage_count"] = 0
+                
+                if update_fields:
+                    await self.collection.update_one(
+                        {"_id": existing["_id"]},
+                        {"$set": update_fields}
+                    )
+                
                 seeded_templates[template_data.name] = str(existing["_id"])
                 continue
 

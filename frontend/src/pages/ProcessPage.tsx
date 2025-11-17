@@ -23,6 +23,7 @@ export default function ProcessPage() {
     title: string;
     message: string;
     isError: boolean;
+    summaryId?: string;
   }>({ title: '', message: '', isError: false });
 
   const { documents, fetchDocuments } = useDocumentStore();
@@ -76,9 +77,15 @@ export default function ProcessPage() {
         300000 // 5 minute timeout
       );
 
-      // Job completed successfully! Navigate to summary view
+      // Job completed successfully! Show success modal
       if (finalJob.summary_id) {
-        navigate(`/summaries/${finalJob.summary_id}`);
+        setModalContent({
+          title: 'Summary Generated Successfully!',
+          message: 'Your document has been processed and the summary is ready to view.',
+          isError: false,
+          summaryId: finalJob.summary_id
+        });
+        setIsModalOpen(true);
       } else {
         // Show error if no summary ID (shouldn't happen)
         setModalContent({
@@ -368,10 +375,18 @@ export default function ProcessPage() {
         onClose={() => setIsModalOpen(false)}
         title={modalContent.title}
         footer={
-          <div className="flex justify-end">
-            <Button onClick={() => setIsModalOpen(false)}>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsModalOpen(false)}>
               Close
             </Button>
+            {modalContent.summaryId && (
+              <Button onClick={() => {
+                setIsModalOpen(false);
+                navigate(`/summaries/${modalContent.summaryId}`);
+              }}>
+                View Summary
+              </Button>
+            )}
           </div>
         }
       >

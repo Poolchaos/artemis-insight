@@ -26,7 +26,7 @@ const navigation = [
   { name: 'Templates', href: '/templates', icon: RectangleStackIcon },
   { name: 'Process', href: '/process', icon: SparklesIcon },
   { name: 'Summaries', href: '/summaries', icon: DocumentCheckIcon },
-  { name: 'Search', href: '/search', icon: MagnifyingGlassIcon },
+  // { name: 'Search', href: '/search', icon: MagnifyingGlassIcon }, // Temporarily disabled
 ];
 
 const AppLayout = ({ children }: AppLayoutProps) => {

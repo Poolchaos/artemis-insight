@@ -114,7 +114,8 @@ const DashboardPage = () => {
               </Button>
             </Link>
 
-            <Link to="/search">
+            {/* Temporarily disabled - search feature needs fixing */}
+            {/* <Link to="/search">
               <Button variant="outline" fullWidth className="h-auto py-4">
                 <div className="text-center">
                   <svg className="h-8 w-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,7 +127,7 @@ const DashboardPage = () => {
                   </p>
                 </div>
               </Button>
-            </Link>
+            </Link> */}
           </div>
         </CardContent>
       </Card>

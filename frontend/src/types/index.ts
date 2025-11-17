@@ -10,9 +10,22 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface RegisterRequest {
+  email: string;
+  name: string;
+  password: string;
+}
+
 export interface LoginResponse {
   access_token: string;
   refresh_token: string;
+  user: User;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
   user: User;
 }
 

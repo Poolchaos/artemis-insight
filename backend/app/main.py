@@ -46,11 +46,11 @@ def create_application() -> FastAPI:
     )
 
     # Register routers
-    application.include_router(auth.router, prefix="/api")
-    application.include_router(documents.router, prefix="/api")
+    application.include_router(auth.router)
+    application.include_router(documents.router)
     application.include_router(templates.router)
-    application.include_router(summaries.router, prefix="/api")
-    application.include_router(jobs.router, prefix="/api")
+    application.include_router(summaries.router)
+    application.include_router(jobs.router)
 
     # Health check endpoint
     @application.get("/health")

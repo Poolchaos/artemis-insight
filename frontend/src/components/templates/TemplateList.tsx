@@ -27,7 +27,7 @@ export function TemplateList() {
     fetchTemplates();
   }, [fetchTemplates]);
 
-  const filteredTemplates = templates.filter((template) =>
+  const filteredTemplates = (templates || []).filter((template) =>
     template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     template.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -63,7 +63,7 @@ export function TemplateList() {
     navigate(`/templates/${templateId}`);
   };
 
-  if (isLoading && templates.length === 0) {
+  if (isLoading && (!templates || templates.length === 0)) {
     return (
       <div className="flex items-center justify-center py-12">
         <Spinner size="lg" />

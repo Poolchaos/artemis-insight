@@ -23,7 +23,7 @@ from app.services.document_service import DocumentService
 from app.services.minio_service import minio_service
 
 
-router = APIRouter(prefix="/documents", tags=["documents"])
+router = APIRouter(prefix="/api/documents", tags=["documents"])
 
 
 # File validation constants

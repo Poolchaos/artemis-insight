@@ -59,7 +59,26 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false
           });
         } catch (error: any) {
-          const message = error.response?.data?.detail || 'Registration failed';
+          // Map technical errors to user-friendly messages
+          let message = 'Unable to create account. Please try again.';
+
+          if (error.response?.status === 404) {
+            message = 'Registration service is temporarily unavailable. Please try again later.';
+          } else if (error.response?.status === 400) {
+            const detail = error.response?.data?.detail || '';
+            if (detail.toLowerCase().includes('email') && detail.toLowerCase().includes('exist')) {
+              message = 'An account with this email already exists. Please sign in or use a different email.';
+            } else if (detail.toLowerCase().includes('password')) {
+              message = 'Password does not meet requirements. Please use a stronger password.';
+            } else {
+              message = detail || 'Invalid information provided. Please check your details.';
+            }
+          } else if (error.response?.status === 500) {
+            message = 'Server error occurred. Please try again later.';
+          } else if (error.message === 'Network Error') {
+            message = 'Unable to connect to the server. Please check your internet connection.';
+          }
+
           set({ error: message, isLoading: false });
           throw error;
         }

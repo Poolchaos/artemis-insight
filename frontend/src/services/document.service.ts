@@ -12,7 +12,7 @@ export const documentService = {
       formData.append('template_id', templateId);
     }
 
-    const response = await api.post<DocumentUploadResponse>('/documents/upload', formData, {
+    const response = await api.post<DocumentUploadResponse>('/api/documents/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -28,7 +28,7 @@ export const documentService = {
     limit?: number;
     status?: string;
   }): Promise<DocumentListResponse> {
-    const response = await api.get<DocumentListResponse>('/documents', { params });
+    const response = await api.get<DocumentListResponse>('/api/documents', { params });
     return response.data;
   },
 
@@ -36,7 +36,7 @@ export const documentService = {
    * Get a specific document by ID
    */
   async getDocument(documentId: string): Promise<Document> {
-    const response = await api.get<Document>(`/documents/${documentId}`);
+    const response = await api.get<Document>(`/api/documents/${documentId}`);
     return response.data;
   },
 
@@ -44,14 +44,14 @@ export const documentService = {
    * Delete a document
    */
   async deleteDocument(documentId: string): Promise<void> {
-    await api.delete(`/documents/${documentId}`);
+    await api.delete(`/api/documents/${documentId}`);
   },
 
   /**
    * Reprocess a document with a different template
    */
   async reprocessDocument(documentId: string, templateId: string): Promise<Document> {
-    const response = await api.post<Document>(`/documents/${documentId}/reprocess`, {
+    const response = await api.post<Document>(`/api/documents/${documentId}/reprocess`, {
       template_id: templateId,
     });
     return response.data;
@@ -61,6 +61,6 @@ export const documentService = {
    * Download document file
    */
   getDocumentDownloadUrl(documentId: string): string {
-    return `${api.defaults.baseURL}/documents/${documentId}/download`;
+    return `${api.defaults.baseURL}/api/documents/${documentId}/download`;
   },
 };

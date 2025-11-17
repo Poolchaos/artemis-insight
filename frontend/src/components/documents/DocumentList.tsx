@@ -25,7 +25,7 @@ export function DocumentList() {
     fetchDocuments();
   }, [fetchDocuments]);
 
-  const filteredDocuments = documents.filter((doc) => {
+  const filteredDocuments = (documents || []).filter((doc) => {
     const matchesSearch = doc.filename.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || doc.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -60,7 +60,7 @@ export function DocumentList() {
     navigate(`/documents/${documentId}`);
   };
 
-  if (isLoading && documents.length === 0) {
+  if (isLoading && (!documents || documents.length === 0)) {
     return (
       <div className="flex items-center justify-center py-12">
         <Spinner size="lg" />

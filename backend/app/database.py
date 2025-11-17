@@ -32,7 +32,7 @@ class DatabaseManager:
 
     def get_database(self) -> AsyncIOMotorDatabase:
         """Get database instance."""
-        if not self.db:
+        if self.db is None:
             raise RuntimeError("Database not connected. Call connect() first.")
         return self.db
 

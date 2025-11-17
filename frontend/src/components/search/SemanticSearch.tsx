@@ -68,7 +68,7 @@ export function SemanticSearch() {
     return 'text-gray-600 dark:text-gray-400';
   };
 
-  const completedDocuments = documents.filter(doc => doc.status === 'completed');
+  const completedDocuments = (documents || []).filter(doc => doc.status === 'completed');
 
   return (
     <div className="space-y-6">

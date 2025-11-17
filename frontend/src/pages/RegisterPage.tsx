@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, type ChangeEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { EnvelopeIcon, LockClosedIcon, UserIcon } from '@heroicons/react/24/outline';
 import Button from '../components/ui/Button';
@@ -17,31 +17,60 @@ const RegisterPage = () => {
     confirmPassword: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const validateField = (name: string, value: string): string => {
+    switch (name) {
+      case 'name':
+        return !value.trim() ? 'Name is required' : '';
+      case 'email':
+        if (!value) return 'Email is required';
+        if (!/\S+@\S+\.\S+/.test(value)) return 'Email is invalid';
+        return '';
+      case 'password':
+        if (!value) return 'Password is required';
+        if (value.length < 8) return 'Password must be at least 8 characters';
+        return '';
+      case 'confirmPassword':
+        return value !== formData.password ? 'Passwords do not match' : '';
+      default:
+        return '';
+    }
+  };
+
+  const handleFieldChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+
+    // Validate field if it has been touched
+    if (touched[name]) {
+      const error = validateField(name, value);
+      setErrors(prev => ({ ...prev, [name]: error }));
+    }
+
+    // Also revalidate confirmPassword when password changes
+    if (name === 'password' && touched.confirmPassword) {
+      const confirmError = formData.confirmPassword !== value ? 'Passwords do not match' : '';
+      setErrors(prev => ({ ...prev, confirmPassword: confirmError }));
+    }
+  };
+
+  const handleFieldBlur = (name: string) => {
+    setTouched(prev => ({ ...prev, [name]: true }));
+    const error = validateField(name, formData[name as keyof typeof formData]);
+    setErrors(prev => ({ ...prev, [name]: error }));
+  };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
-    }
-
-    if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
+    Object.keys(formData).forEach(key => {
+      const error = validateField(key, formData[key as keyof typeof formData]);
+      if (error) newErrors[key] = error;
+    });
 
     setErrors(newErrors);
+    setTouched({ name: true, email: true, password: true, confirmPassword: true });
     return Object.keys(newErrors).length === 0;
   };
 
@@ -107,7 +136,8 @@ const RegisterPage = () => {
                 name="name"
                 placeholder="John Doe"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={handleFieldChange}
+                onBlur={() => handleFieldBlur('name')}
                 error={errors.name}
                 leftIcon={<UserIcon className="h-5 w-5" />}
                 disabled={isLoading}
@@ -120,7 +150,8 @@ const RegisterPage = () => {
                 name="email"
                 placeholder="john@example.com"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={handleFieldChange}
+                onBlur={() => handleFieldBlur('email')}
                 error={errors.email}
                 leftIcon={<EnvelopeIcon className="h-5 w-5" />}
                 disabled={isLoading}
@@ -134,7 +165,8 @@ const RegisterPage = () => {
                   name="password"
                   placeholder="••••••••"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={handleFieldChange}
+                  onBlur={() => handleFieldBlur('password')}
                   error={errors.password}
                   leftIcon={<LockClosedIcon className="h-5 w-5" />}
                   disabled={isLoading}
@@ -153,7 +185,8 @@ const RegisterPage = () => {
                 name="confirmPassword"
                 placeholder="••••••••"
                 value={formData.confirmPassword}
-                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                onChange={handleFieldChange}
+                onBlur={() => handleFieldBlur('confirmPassword')}
                 error={errors.confirmPassword}
                 leftIcon={<LockClosedIcon className="h-5 w-5" />}
                 disabled={isLoading}

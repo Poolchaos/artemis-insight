@@ -6,7 +6,7 @@ export const summaryService = {
    * Get summary for a document
    */
   async getSummary(documentId: string): Promise<Summary> {
-    const response = await api.get<Summary>(`/summaries/document/${documentId}`);
+    const response = await api.get<Summary>(`/api/summaries/document/${documentId}`);
     return response.data;
   },
 
@@ -14,7 +14,7 @@ export const summaryService = {
    * Get summary by ID
    */
   async getSummaryById(summaryId: string): Promise<Summary> {
-    const response = await api.get<Summary>(`/summaries/${summaryId}`);
+    const response = await api.get<Summary>(`/api/summaries/${summaryId}`);
     return response.data;
   },
 
@@ -22,7 +22,7 @@ export const summaryService = {
    * Export summary as text
    */
   async exportSummary(summaryId: string): Promise<string> {
-    const response = await api.get<{ content: string }>(`/summaries/${summaryId}/export`);
+    const response = await api.get<{ content: string }>(`/api/summaries/${summaryId}/export`);
     return response.data.content;
   },
 };

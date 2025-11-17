@@ -9,7 +9,7 @@ export const templateService = {
     skip?: number;
     limit?: number;
   }): Promise<TemplateListResponse> {
-    const response = await api.get<TemplateListResponse>('/templates', { params });
+    const response = await api.get<TemplateListResponse>('/api/templates', { params });
     return response.data;
   },
 
@@ -17,7 +17,7 @@ export const templateService = {
    * Get a specific template by ID
    */
   async getTemplate(templateId: string): Promise<Template> {
-    const response = await api.get<Template>(`/templates/${templateId}`);
+    const response = await api.get<Template>(`/api/templates/${templateId}`);
     return response.data;
   },
 
@@ -25,7 +25,7 @@ export const templateService = {
    * Create a new template
    */
   async createTemplate(data: CreateTemplateRequest): Promise<Template> {
-    const response = await api.post<Template>('/templates', data);
+    const response = await api.post<Template>('/api/templates', data);
     return response.data;
   },
 
@@ -33,7 +33,7 @@ export const templateService = {
    * Update an existing template
    */
   async updateTemplate(templateId: string, data: UpdateTemplateRequest): Promise<Template> {
-    const response = await api.put<Template>(`/templates/${templateId}`, data);
+    const response = await api.put<Template>(`/api/templates/${templateId}`, data);
     return response.data;
   },
 
@@ -41,6 +41,6 @@ export const templateService = {
    * Delete a template
    */
   async deleteTemplate(templateId: string): Promise<void> {
-    await api.delete(`/templates/${templateId}`);
+    await api.delete(`/api/templates/${templateId}`);
   },
 };

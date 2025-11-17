@@ -10,20 +10,30 @@ interface ThemeStore {
 export const useThemeStore = create<ThemeStore>()(
   persist(
     (set) => ({
-      theme: 'light',
+      theme: 'dark',
       toggleTheme: () =>
         set((state) => {
           const newTheme = state.theme === 'light' ? 'dark' : 'light';
-          document.documentElement.classList.toggle('dark', newTheme === 'dark');
+          if (typeof document !== 'undefined') {
+            document.documentElement.classList.toggle('dark', newTheme === 'dark');
+          }
           return { theme: newTheme };
         }),
       setTheme: (theme) => {
-        document.documentElement.classList.toggle('dark', theme === 'dark');
+        if (typeof document !== 'undefined') {
+          document.documentElement.classList.toggle('dark', theme === 'dark');
+        }
         set({ theme });
       },
     }),
     {
       name: 'theme-storage',
+      onRehydrateStorage: () => (state) => {
+        // Apply theme after hydration
+        if (state && typeof document !== 'undefined') {
+          document.documentElement.classList.toggle('dark', state.theme === 'dark');
+        }
+      },
     }
   )
 );

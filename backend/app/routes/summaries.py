@@ -62,7 +62,7 @@ async def create_summary(
 
     # Verify document exists and belongs to user
     doc_service = DocumentService(db)
-    document = await doc_service.get_document(document_id, str(current_user.id))
+    document = await doc_service.get_document_by_user(document_id, str(current_user.id))
 
     if not document:
         raise HTTPException(

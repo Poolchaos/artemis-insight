@@ -13,7 +13,7 @@ from app.models.job import JobResponse, JobStatus, JobType
 from app.middleware.auth import get_current_user
 
 
-router = APIRouter(prefix="/jobs", tags=["jobs"])
+router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
 
 @router.get("/{job_id}", response_model=JobResponse)

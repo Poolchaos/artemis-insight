@@ -1,5 +1,5 @@
 import api from '../lib/api';
-import { type Document, type DocumentListResponse, type DocumentUploadResponse } from '../types';
+import { type Document, type DocumentUploadResponse } from '../types';
 
 export const documentService = {
   /**
@@ -27,8 +27,8 @@ export const documentService = {
     skip?: number;
     limit?: number;
     status?: string;
-  }): Promise<DocumentListResponse> {
-    const response = await api.get<DocumentListResponse>('/api/documents', { params });
+  }): Promise<Document[]> {
+    const response = await api.get<Document[]>('/api/documents', { params });
     return response.data;
   },
 
@@ -62,5 +62,25 @@ export const documentService = {
    */
   getDocumentDownloadUrl(documentId: string): string {
     return `${api.defaults.baseURL}/api/documents/${documentId}/download`;
+  },
+
+  /**
+   * Download document as blob (with authentication)
+   */
+  async downloadDocumentBlob(
+    documentId: string,
+    onProgress?: (progress: number) => void
+  ): Promise<Blob> {
+    const response = await api.get(`/api/documents/${documentId}/download`, {
+      responseType: 'blob',
+      timeout: 120000, // 2 minutes for large files
+      onDownloadProgress: (progressEvent) => {
+        if (progressEvent.total && onProgress) {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(percentCompleted);
+        }
+      },
+    });
+    return response.data;
   },
 };

@@ -4,9 +4,16 @@ import { useThemeStore } from '../stores/theme';
 const ThemeToggle = () => {
   const { theme, toggleTheme } = useThemeStore();
 
+  const handleClick = () => {
+    console.log('[ThemeToggle] Button clicked, current theme:', theme);
+    toggleTheme();
+  };
+
+  console.log('[ThemeToggle] Rendered with theme:', theme);
+
   return (
     <button
-      onClick={toggleTheme}
+      onClick={handleClick}
       className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
       aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
     >

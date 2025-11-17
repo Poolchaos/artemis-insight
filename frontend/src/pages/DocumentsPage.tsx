@@ -3,14 +3,18 @@ import { Tab } from '@headlessui/react';
 import { DocumentTextIcon, CloudArrowUpIcon } from '@heroicons/react/24/outline';
 import { DocumentUpload } from '../components/documents/DocumentUpload';
 import { DocumentList } from '../components/documents/DocumentList';
+import { useDocumentStore } from '../stores/document.store';
 import { cn } from '../lib/utils';
 
 export default function DocumentsPage() {
   const [selectedTab, setSelectedTab] = useState(0);
+  const { fetchDocuments } = useDocumentStore();
 
-  const handleUploadComplete = () => {
-    // Switch to list tab after successful upload
-    setSelectedTab(1);
+  const handleUploadComplete = async () => {
+    // Refresh the document list to ensure the new document appears
+    await fetchDocuments();
+    // Switch back to My Documents tab after successful upload
+    setSelectedTab(0);
   };
 
   return (
@@ -39,8 +43,8 @@ export default function DocumentsPage() {
             }
           >
             <div className="flex items-center justify-center gap-2">
-              <CloudArrowUpIcon className="h-5 w-5" />
-              <span>Upload</span>
+              <DocumentTextIcon className="h-5 w-5" />
+              <span>My Documents</span>
             </div>
           </Tab>
           <Tab
@@ -56,18 +60,18 @@ export default function DocumentsPage() {
             }
           >
             <div className="flex items-center justify-center gap-2">
-              <DocumentTextIcon className="h-5 w-5" />
-              <span>My Documents</span>
+              <CloudArrowUpIcon className="h-5 w-5" />
+              <span>Upload</span>
             </div>
           </Tab>
         </Tab.List>
 
         <Tab.Panels className="mt-6">
           <Tab.Panel className="focus:outline-none">
-            <DocumentUpload onUploadComplete={handleUploadComplete} />
+            <DocumentList />
           </Tab.Panel>
           <Tab.Panel className="focus:outline-none">
-            <DocumentList />
+            <DocumentUpload onUploadComplete={handleUploadComplete} />
           </Tab.Panel>
         </Tab.Panels>
       </Tab.Group>

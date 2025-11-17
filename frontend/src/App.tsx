@@ -6,6 +6,9 @@ import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import DocumentsPage from './pages/DocumentsPage';
 import DocumentViewPage from './pages/DocumentViewPage';
+import ProcessPage from './pages/ProcessPage';
+import SummariesPage from './pages/SummariesPage';
+import SummaryViewPage from './pages/SummaryViewPage';
 import TemplatesPage from './pages/TemplatesPage';
 import TemplateCreatePage from './pages/TemplateCreatePage';
 import TemplateEditPage from './pages/TemplateEditPage';
@@ -78,6 +81,39 @@ function App() {
                 <ProtectedRoute>
                   <AppLayout>
                     <DocumentViewPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/process"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <ProcessPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/summaries"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <SummariesPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/summaries/:id"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <SummaryViewPage />
                   </AppLayout>
                 </ProtectedRoute>
               }

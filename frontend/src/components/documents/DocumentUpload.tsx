@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
 import { CloudArrowUpIcon, DocumentTextIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import Button from '../ui/Button';
+import Modal from '../ui/Modal';
 import { useDocumentStore } from '../../stores/document.store';
-import { useTemplateStore } from '../../stores/template.store';
 
 interface DocumentUploadProps {
   onUploadComplete?: (documentId: string) => void;
@@ -11,15 +11,10 @@ interface DocumentUploadProps {
 export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [showProcessingModal, setShowProcessingModal] = useState(false);
+  const [uploadedFilename, setUploadedFilename] = useState('');
 
   const { uploadDocument, isLoading, error, clearError } = useDocumentStore();
-  const { templates, fetchTemplates } = useTemplateStore();
-
-  // Fetch templates on mount
-  useState(() => {
-    fetchTemplates();
-  });
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -60,13 +55,12 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
     if (!selectedFile) return;
 
     try {
-      const document = await uploadDocument(
-        selectedFile,
-        selectedTemplateId || undefined
-      );
+      const filename = selectedFile.name;
+      const document = await uploadDocument(selectedFile);
 
       setSelectedFile(null);
-      setSelectedTemplateId('');
+      setUploadedFilename(filename);
+      setShowProcessingModal(true);
 
       if (onUploadComplete) {
         onUploadComplete(document.id);
@@ -142,38 +136,6 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
         </div>
       )}
 
-      {/* Template Selection */}
-      {selectedFile && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Select Template (Optional)
-          </label>
-          <select
-            value={selectedTemplateId}
-            onChange={(e) => setSelectedTemplateId(e.target.value)}
-            disabled={isLoading}
-            className="
-              w-full px-3 py-2 border border-gray-300 dark:border-gray-600
-              rounded-md shadow-sm
-              bg-white dark:bg-gray-800
-              text-gray-900 dark:text-gray-100
-              focus:ring-2 focus:ring-blue-500 focus:border-transparent
-              disabled:opacity-50 disabled:cursor-not-allowed
-            "
-          >
-            <option value="">No template (default summarization)</option>
-            {templates.map((template) => (
-              <option key={template.id} value={template.id}>
-                {template.name}
-              </option>
-            ))}
-          </select>
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            Choose a template to customize the summary structure
-          </p>
-        </div>
-      )}
-
       {/* Error Display */}
       {error && (
         <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -193,6 +155,51 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
           </Button>
         </div>
       )}
+
+      {/* Processing Modal */}
+      <Modal
+        isOpen={showProcessingModal}
+        onClose={() => setShowProcessingModal(false)}
+        title="Document Processing"
+        footer={
+          <div className="flex justify-end">
+            <Button onClick={() => setShowProcessingModal(false)}>
+              Got it
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div className="flex items-center justify-center">
+            <div className="relative w-16 h-16">
+              <div className="absolute inset-0 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-blue-500 rounded-full border-t-transparent animate-spin"></div>
+            </div>
+          </div>
+
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              Your document is being processed
+            </h3>
+            <p className="text-gray-700 dark:text-gray-300 mb-4">
+              <strong>{uploadedFilename}</strong> has been uploaded successfully and is now being processed.
+            </p>
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-sm text-left">
+              <p className="text-gray-700 dark:text-gray-300 mb-2">
+                <strong>What happens next?</strong>
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-gray-600 dark:text-gray-400">
+                <li>OCR and text extraction (~2-5 seconds)</li>
+                <li>Document will be ready for analysis</li>
+                <li>You'll see it in your documents list shortly</li>
+              </ul>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+              You can close this and continue working. The document will appear in your list once processing is complete.
+            </p>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

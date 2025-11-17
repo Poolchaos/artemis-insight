@@ -25,7 +25,8 @@ export function TemplateList() {
 
   useEffect(() => {
     fetchTemplates();
-  }, [fetchTemplates]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filteredTemplates = (templates || []).filter((template) =>
     template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

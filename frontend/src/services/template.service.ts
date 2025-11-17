@@ -1,5 +1,5 @@
 import api from '../lib/api';
-import { type Template, type TemplateListResponse, type CreateTemplateRequest, type UpdateTemplateRequest } from '../types';
+import { type Template, type CreateTemplateRequest, type UpdateTemplateRequest } from '../types';
 
 export const templateService = {
   /**
@@ -8,8 +8,8 @@ export const templateService = {
   async getTemplates(params?: {
     skip?: number;
     limit?: number;
-  }): Promise<TemplateListResponse> {
-    const response = await api.get<TemplateListResponse>('/api/templates', { params });
+  }): Promise<Template[]> {
+    const response = await api.get<Template[]>('/api/templates', { params });
     return response.data;
   },
 

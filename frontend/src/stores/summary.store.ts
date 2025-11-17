@@ -11,7 +11,7 @@ interface SummaryState {
   // Actions
   fetchSummary: (documentId: string) => Promise<void>;
   fetchSummaryById: (summaryId: string) => Promise<void>;
-  exportSummary: (summaryId: string) => Promise<string>;
+  exportSummary: (summaryId: string, format: 'pdf' | 'docx') => Promise<void>;
   clearError: () => void;
 }
 
@@ -60,12 +60,11 @@ export const useSummaryStore = create<SummaryState>((set, get) => ({
     }
   },
 
-  exportSummary: async (summaryId) => {
+  exportSummary: async (summaryId, format) => {
     set({ isLoading: true, error: null });
     try {
-      const content = await summaryService.exportSummary(summaryId);
+      await summaryService.exportSummary(summaryId, format);
       set({ isLoading: false });
-      return content;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error && 'response' in error
         ? (error as any).response?.data?.detail || 'Failed to export summary'

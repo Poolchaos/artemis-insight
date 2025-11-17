@@ -6,11 +6,13 @@ import {
   FunnelIcon,
   TrashIcon,
   EyeIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import Spinner from '../ui/Spinner';
 import Card, { CardContent } from '../ui/Card';
+import Modal from '../ui/Modal';
 import { useDocumentStore } from '../../stores/document.store';
 import { formatRelativeTime } from '../../lib/utils';
 
@@ -18,14 +20,18 @@ export function DocumentList() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<{ id: string; filename: string } | null>(null);
 
   const { documents, isLoading, error, fetchDocuments, deleteDocument } = useDocumentStore();
 
   useEffect(() => {
     fetchDocuments();
-  }, [fetchDocuments]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filteredDocuments = (documents || []).filter((doc) => {
+    if (!doc || !doc.filename) return false;
     const matchesSearch = doc.filename.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || doc.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -44,14 +50,21 @@ export function DocumentList() {
     }
   };
 
-  const handleDelete = async (documentId: string, e: React.MouseEvent) => {
+  const handleDelete = async (documentId: string, filename: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    setDocumentToDelete({ id: documentId, filename });
+    setDeleteModalOpen(true);
+  };
 
-    if (window.confirm('Are you sure you want to delete this document?')) {
+  const confirmDelete = async () => {
+    if (documentToDelete) {
       try {
-        await deleteDocument(documentId);
+        await deleteDocument(documentToDelete.id);
+        setDeleteModalOpen(false);
+        setDocumentToDelete(null);
       } catch {
         // Error handled by store
+        setDeleteModalOpen(false);
       }
     }
   };
@@ -114,6 +127,17 @@ export function DocumentList() {
                 <option value="failed">Failed</option>
               </select>
             </div>
+
+            {/* Refresh Button */}
+            <Button
+              variant="outline"
+              onClick={() => fetchDocuments()}
+              disabled={isLoading}
+              className="flex items-center gap-2"
+            >
+              <ArrowPathIcon className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -167,9 +191,16 @@ export function DocumentList() {
                       </div>
 
                       <div className="mt-2 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                        <span>{document.page_count} pages</span>
+                        <span>{document.page_count || 0} pages</span>
                         <span>•</span>
-                        <span>{formatRelativeTime(new Date(document.uploaded_at))}</span>
+                        <span>
+                          {document.upload_date
+                            ? formatRelativeTime(new Date(document.upload_date))
+                            : document.uploaded_at
+                              ? formatRelativeTime(new Date(document.uploaded_at))
+                              : 'Unknown date'
+                          }
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -190,7 +221,7 @@ export function DocumentList() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={(e: React.MouseEvent) => handleDelete(document.id, e)}
+                      onClick={(e: React.MouseEvent) => handleDelete(document.id, document.filename, e)}
                       className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                     >
                       <TrashIcon className="h-4 w-4" />
@@ -209,6 +240,27 @@ export function DocumentList() {
           <Spinner />
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        title="Delete Document"
+        footer={
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={confirmDelete}>
+              Delete
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-gray-700 dark:text-gray-300">
+          Are you sure you want to delete <strong>{documentToDelete?.filename}</strong>? This action cannot be undone.
+        </p>
+      </Modal>
     </div>
   );
 }

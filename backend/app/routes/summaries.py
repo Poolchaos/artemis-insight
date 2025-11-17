@@ -4,9 +4,19 @@ Summary management routes for AI-generated document summaries.
 
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import StreamingResponse
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
 from datetime import datetime
+import io
+from docx import Document
+from docx.shared import Pt, RGBColor, Inches
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+from reportlab.lib.enums import TA_LEFT, TA_CENTER
 
 from app.database import get_db
 from app.models.user import UserInDB
@@ -24,7 +34,7 @@ from app.services.template_service import TemplateService
 from app.tasks import generate_summary_task, regenerate_section_task
 
 
-router = APIRouter(prefix="/summaries", tags=["summaries"])
+router = APIRouter(prefix="/api/summaries", tags=["summaries"])
 
 
 @router.post("", response_model=dict, status_code=status.HTTP_202_ACCEPTED)
@@ -151,7 +161,7 @@ async def list_summaries(
     Returns condensed summary information for list views.
     """
     # Build query
-    query = {"user_id": current_user.id}
+    query = {"user_id": ObjectId(current_user.id)}
 
     if document_id:
         if not ObjectId.is_valid(document_id):
@@ -218,7 +228,7 @@ async def get_summary(
     # Query database
     summary = await db.summaries.find_one({
         "_id": ObjectId(summary_id),
-        "user_id": current_user.id
+        "user_id": ObjectId(current_user.id)
     })
 
     if not summary:
@@ -266,7 +276,7 @@ async def delete_summary(
     # Delete summary
     result = await db.summaries.delete_one({
         "_id": ObjectId(summary_id),
-        "user_id": current_user.id
+        "user_id": ObjectId(current_user.id)
     })
 
     if result.deleted_count == 0:
@@ -370,3 +380,238 @@ async def regenerate_summary_section(
         "section_title": section_title,
         "message": f"Section regeneration job created. Poll GET /api/jobs/{str(job_id)} for status."
     }
+
+
+@router.get("/{summary_id}/export/pdf")
+async def export_summary_pdf(
+    summary_id: str,
+    current_user: UserInDB = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """
+    Export summary as PDF.
+    """
+    # Validate ObjectId
+    try:
+        summary_obj_id = ObjectId(summary_id)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid summary ID format"
+        )
+
+    # Get summary
+    summary = await db.summaries.find_one({
+        "_id": summary_obj_id,
+        "user_id": ObjectId(current_user.id)
+    })
+
+    if not summary:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Summary not found"
+        )
+
+    # Create PDF in memory
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
+
+    # Container for the 'Flowable' objects
+    elements = []
+
+    # Define styles
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=RGBColor(0, 0, 0),
+        spaceAfter=30,
+        alignment=TA_CENTER
+    )
+
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=16,
+        textColor=RGBColor(0, 0, 0),
+        spaceAfter=12,
+        spaceBefore=12
+    )
+
+    body_style = ParagraphStyle(
+        'CustomBody',
+        parent=styles['BodyText'],
+        fontSize=11,
+        spaceAfter=12,
+        alignment=TA_LEFT
+    )
+
+    # Add title
+    title = Paragraph(summary.get('template_name', 'Summary'), title_style)
+    elements.append(title)
+    elements.append(Spacer(1, 0.3*inch))
+
+    # Add metadata
+    created_at = summary.get('created_at', datetime.utcnow()).strftime('%Y-%m-%d %H:%M')
+    metadata = Paragraph(f"<b>Generated:</b> {created_at}<br/><b>Status:</b> {summary.get('status', 'unknown')}", body_style)
+    elements.append(metadata)
+    elements.append(Spacer(1, 0.3*inch))
+
+    # Add sections
+    sections = sorted(summary.get('sections', []), key=lambda x: x.get('order', 0))
+
+    for section in sections:
+        # Section title
+        section_title = Paragraph(f"{section.get('order', '')}. {section.get('title', 'Untitled')}", heading_style)
+        elements.append(section_title)
+
+        # Section content - convert markdown to ReportLab format
+        content = section.get('content', 'No content')
+
+        # Escape HTML special characters first
+        content = content.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
+        # Convert markdown headers to bold text (already escaped, so use safe tags)
+        import re
+        content = re.sub(r'###\s*(.*?)(?=\n|$)', r'<b>\1</b>', content)
+        content = re.sub(r'##\s*(.*?)(?=\n|$)', r'<b>\1</b>', content)
+        content = re.sub(r'#\s*(.*?)(?=\n|$)', r'<b>\1</b>', content)
+
+        # Convert markdown bold (pairs of **)
+        content = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', content)
+
+        # Convert markdown italic (single *)
+        content = re.sub(r'\*(.*?)\*', r'<i>\1</i>', content)
+
+        # Convert line breaks
+        content = content.replace('\n\n', '<br/><br/>')
+        content = content.replace('\n', '<br/>')
+
+        content_para = Paragraph(content, body_style)
+        elements.append(content_para)
+        elements.append(Spacer(1, 0.2*inch))
+
+    # Build PDF
+    doc.build(elements)
+
+    # Get PDF data
+    buffer.seek(0)
+
+    filename = f"{summary.get('template_name', 'summary').replace(' ', '_')}_{summary_id}.pdf"
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@router.get("/{summary_id}/export/docx")
+async def export_summary_docx(
+    summary_id: str,
+    current_user: UserInDB = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """
+    Export summary as Word document (DOCX).
+    """
+    # Validate ObjectId
+    try:
+        summary_obj_id = ObjectId(summary_id)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid summary ID format"
+        )
+
+    # Get summary
+    summary = await db.summaries.find_one({
+        "_id": summary_obj_id,
+        "user_id": ObjectId(current_user.id)
+    })
+
+    if not summary:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Summary not found"
+        )
+
+    # Create Word document
+    doc = Document()
+
+    # Add title
+    title = doc.add_heading(summary.get('template_name', 'Summary'), level=0)
+    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # Add metadata
+    doc.add_paragraph()
+    metadata_para = doc.add_paragraph()
+    metadata_para.add_run('Generated: ').bold = True
+    metadata_para.add_run(summary.get('created_at', datetime.utcnow()).strftime('%Y-%m-%d %H:%M'))
+    metadata_para.add_run('\nStatus: ').bold = True
+    metadata_para.add_run(summary.get('status', 'unknown'))
+
+    doc.add_paragraph()
+    doc.add_paragraph()
+
+    # Add sections
+    sections = sorted(summary.get('sections', []), key=lambda x: x.get('order', 0))
+
+    for section in sections:
+        # Section heading
+        section_heading = doc.add_heading(
+            f"{section.get('order', '')}. {section.get('title', 'Untitled')}",
+            level=1
+        )
+
+        # Section content
+        content = section.get('content', 'No content')
+
+        # Simple markdown parsing for Word
+        lines = content.split('\n')
+        for line in lines:
+            if line.strip():
+                para = doc.add_paragraph()
+
+                # Handle headers
+                if line.startswith('###'):
+                    para.style = 'Heading 3'
+                    para.text = line.replace('###', '').strip()
+                elif line.startswith('##'):
+                    para.style = 'Heading 2'
+                    para.text = line.replace('##', '').strip()
+                elif line.startswith('#'):
+                    para.style = 'Heading 1'
+                    para.text = line.replace('#', '').strip()
+                else:
+                    # Handle bold and italic
+                    text = line
+                    parts = text.split('**')
+                    for i, part in enumerate(parts):
+                        if i % 2 == 0:
+                            # Regular text, check for italic
+                            italic_parts = part.split('*')
+                            for j, ipart in enumerate(italic_parts):
+                                if j % 2 == 0:
+                                    para.add_run(ipart)
+                                else:
+                                    para.add_run(ipart).italic = True
+                        else:
+                            # Bold text
+                            para.add_run(part).bold = True
+
+        doc.add_paragraph()
+
+    # Save to buffer
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+
+    filename = f"{summary.get('template_name', 'summary').replace(' ', '_')}_{summary_id}.docx"
+
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )

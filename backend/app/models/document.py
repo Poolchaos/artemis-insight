@@ -25,6 +25,7 @@ class DocumentBase(BaseModel):
     file_size: int = Field(..., gt=0, description="File size in bytes")
     mime_type: str = Field(default="application/pdf", description="MIME type of the document")
     status: DocumentStatus = Field(default=DocumentStatus.PENDING, description="Processing status")
+    page_count: Optional[int] = Field(default=None, ge=0, description="Number of pages in the document")
     processing_metadata: Optional[Dict[str, Any]] = Field(default=None, description="Additional processing metadata")
 
     @field_validator('mime_type')
@@ -78,6 +79,7 @@ class DocumentResponse(BaseModel):
     file_size: int
     mime_type: str
     status: DocumentStatus
+    page_count: Optional[int] = None
     processing_metadata: Optional[Dict[str, Any]] = None
     upload_date: datetime
     created_at: datetime

@@ -33,10 +33,16 @@ export interface Document {
   id: string;
   user_id: string;
   filename: string;
-  s3_key: string;
-  page_count: number;
+  s3_key?: string;
+  file_path?: string;
+  file_size?: number;
+  mime_type?: string;
+  page_count?: number;
   status?: 'pending' | 'processing' | 'completed' | 'failed';
-  uploaded_at: string;
+  upload_date?: string;
+  uploaded_at?: string; // Legacy support
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface DocumentUploadResponse {
@@ -63,29 +69,96 @@ export interface Job {
   updated_at: string;
 }
 
+export interface SummaryListItem {
+  id: string;
+  document_id: string;
+  template_name: string;
+  status: 'processing' | 'completed' | 'failed';
+  section_count: number;
+  total_word_count: number;
+  started_at: string;
+  completed_at?: string;
+}
+
+export interface SummarySection {
+  title: string;
+  order: number;
+  content: string;
+  source_chunks: number;
+  pages_referenced: number[];
+  word_count: number;
+  generated_at: string;
+}
+
+export interface ProcessingMetadata {
+  total_pages: number;
+  total_words: number;
+  total_chunks: number;
+  embedding_count: number;
+  processing_duration_seconds?: number;
+  estimated_cost_usd?: number;
+}
+
 export interface Summary {
   id: string;
-  job_id: string;
-  content: string;
-  template_id?: string;
+  document_id: string;
+  user_id: string;
+  job_id?: string;
+  template_id: string;
+  template_name: string;
+  status: 'processing' | 'completed' | 'failed';
+  sections: SummarySection[];
+  metadata?: ProcessingMetadata;
+  error_message?: string;
+  started_at: string;
+  completed_at?: string;
   created_at: string;
+  updated_at: string;
+}
+
+export interface TemplateSection {
+  // New backend format
+  title?: string;
+  guidance_prompt?: string;
+  order?: number;
+  required?: boolean;
+  // Legacy format (for compatibility with form components)
+  name?: string;
+  prompt?: string;
+}
+
+export interface ProcessingStrategy {
+  approach: string;
+  chunk_size: number;
+  overlap: number;
+  embedding_model: string;
+  summarization_model: string;
+  max_tokens_per_section: number;
+  temperature: number;
 }
 
 export interface Template {
   id: string;
   name: string;
   description: string;
-  fields: string[];
-  prompt_template: string;
-  is_system: boolean;
+  // New backend fields
+  target_length?: string;
+  category?: string;
+  sections?: TemplateSection[];
+  processing_strategy?: ProcessingStrategy;
+  system_prompt?: string;
+  is_active?: boolean;
+  is_default?: boolean;
+  // Legacy fields (for compatibility)
+  fields?: string[];
+  prompt_template?: string;
+  is_system?: boolean;
   user_id?: string;
+  created_by?: string;
   created_at?: string;
   updated_at?: string;
-}
-
-export interface TemplateSection {
-  name: string;
-  prompt: string;
+  version?: number;
+  usage_count?: number;
 }
 
 export interface CreateTemplateRequest {

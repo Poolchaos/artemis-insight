@@ -5,6 +5,8 @@ import {
   DocumentTextIcon,
   RectangleStackIcon,
   MagnifyingGlassIcon,
+  SparklesIcon,
+  DocumentCheckIcon,
   ArrowRightOnRectangleIcon,
   Bars3Icon,
   XMarkIcon
@@ -22,6 +24,8 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
   { name: 'Documents', href: '/documents', icon: DocumentTextIcon },
   { name: 'Templates', href: '/templates', icon: RectangleStackIcon },
+  { name: 'Process', href: '/process', icon: SparklesIcon },
+  { name: 'Summaries', href: '/summaries', icon: DocumentCheckIcon },
   { name: 'Search', href: '/search', icon: MagnifyingGlassIcon },
 ];
 

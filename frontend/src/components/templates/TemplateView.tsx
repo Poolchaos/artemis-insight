@@ -94,22 +94,27 @@ export function TemplateView() {
           </h2>
         </CardHeader>
         <CardContent className="space-y-6">
-          {currentTemplate.fields && currentTemplate.fields.length > 0 ? (
-            currentTemplate.fields.map((field, index) => (
-              <div
-                key={index}
-                className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
-              >
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                  {index + 1}. {field}
-                </h3>
-                {currentTemplate.prompt_template && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {currentTemplate.prompt_template}
+          {currentTemplate.sections && currentTemplate.sections.length > 0 ? (
+            currentTemplate.sections
+              .sort((a, b) => (a.order || 0) - (b.order || 0))
+              .map((section, index) => (
+                <div
+                  key={index}
+                  className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      {section.order || (index + 1)}. {section.title}
+                    </h3>
+                    {section.required && (
+                      <Badge variant="info">Required</Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                    {section.guidance_prompt}
                   </p>
-                )}
-              </div>
-            ))
+                </div>
+              ))
           ) : (
             <p className="text-sm text-gray-500 dark:text-gray-400">
               No sections defined
@@ -136,7 +141,7 @@ export function TemplateView() {
             <div>
               <dt className="font-medium text-gray-500 dark:text-gray-400">Sections</dt>
               <dd className="mt-1 text-gray-900 dark:text-gray-100">
-                {currentTemplate.fields?.length || 0}
+                {currentTemplate.sections?.length || 0}
               </dd>
             </div>
             {currentTemplate.created_at && (

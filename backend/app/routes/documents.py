@@ -2,9 +2,11 @@
 Document management routes.
 """
 
+import io
 import uuid
 from typing import List, Optional
 from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status, Query
+from fastapi.responses import StreamingResponse
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.database import get_db
@@ -100,6 +102,13 @@ async def upload_document(
 
     document_service = DocumentService(db)
     document = await document_service.create_document(document_data, file_path)
+
+    # Trigger background processing task
+    from app.tasks import process_document_task
+    process_document_task.delay(
+        document_id=str(document.id),
+        user_id=str(current_user.id)
+    )
 
     # Convert to response model
     return DocumentResponse(
@@ -199,9 +208,10 @@ async def download_document(
     db: AsyncIOMotorDatabase = Depends(get_db)
 ):
     """
-    Get a presigned URL for downloading a document.
+    Download the document file directly.
 
-    - Returns a temporary URL that expires in 1 hour
+    - Streams the file from MinIO storage
+    - Returns the actual file content with appropriate headers
     """
     document_service = DocumentService(db)
     document = await document_service.get_document_by_user(document_id, str(current_user.id))
@@ -213,12 +223,22 @@ async def download_document(
         )
 
     try:
-        presigned_url = minio_service.get_presigned_url(document.file_path)
-        return {"download_url": presigned_url}
+        # Get file from MinIO
+        file_data = minio_service.download_file(document.file_path)
+
+        # Return as streaming response with Content-Length for progress tracking
+        return StreamingResponse(
+            io.BytesIO(file_data),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'inline; filename="{document.filename}"',
+                "Content-Length": str(len(file_data))
+            }
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate download URL: {str(e)}"
+            detail=f"Failed to download file: {str(e)}"
         )
 
 

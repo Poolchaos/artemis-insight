@@ -48,7 +48,16 @@ export function TemplateForm({ templateId, mode }: TemplateFormProps) {
     if (mode === 'edit' && currentTemplate) {
       setName(currentTemplate.name);
       setDescription(currentTemplate.description);
-      if (currentTemplate.fields && currentTemplate.fields.length > 0) {
+
+      // Handle both new sections format and legacy fields format
+      if (currentTemplate.sections && currentTemplate.sections.length > 0) {
+        setSections(
+          currentTemplate.sections.map(section => ({
+            name: section.name || section.title || '',
+            prompt: section.prompt || section.guidance_prompt || ''
+          }))
+        );
+      } else if (currentTemplate.fields && currentTemplate.fields.length > 0) {
         setSections(
           currentTemplate.fields.map(field => ({
             name: field,
@@ -93,7 +102,7 @@ export function TemplateForm({ templateId, mode }: TemplateFormProps) {
     }
 
     for (const section of sections) {
-      if (!section.name.trim() || !section.prompt.trim()) {
+      if (!(section.name || section.title)?.trim() || !(section.prompt || section.guidance_prompt)?.trim()) {
         alert('Please fill in all section fields');
         return;
       }
@@ -105,8 +114,8 @@ export function TemplateForm({ templateId, mode }: TemplateFormProps) {
           name: name.trim(),
           description: description.trim(),
           sections: sections.map(s => ({
-            name: s.name.trim(),
-            prompt: s.prompt.trim()
+            name: (s.name || s.title || '').trim(),
+            prompt: (s.prompt || s.guidance_prompt || '').trim()
           }))
         });
       } else if (mode === 'edit' && templateId) {
@@ -114,8 +123,8 @@ export function TemplateForm({ templateId, mode }: TemplateFormProps) {
           name: name.trim(),
           description: description.trim(),
           sections: sections.map(s => ({
-            name: s.name.trim(),
-            prompt: s.prompt.trim()
+            name: (s.name || s.title || '').trim(),
+            prompt: (s.prompt || s.guidance_prompt || '').trim()
           }))
         });
       }

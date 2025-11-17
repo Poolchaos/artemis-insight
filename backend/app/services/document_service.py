@@ -2,6 +2,7 @@
 Document service for managing PDF documents and metadata.
 """
 
+import logging
 from typing import List, Optional
 from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -15,6 +16,8 @@ from app.models.document import (
 )
 from app.models.user import PyObjectId
 from app.services.minio_service import minio_service
+
+logger = logging.getLogger(__name__)
 
 
 class DocumentService:
@@ -174,6 +177,48 @@ class DocumentService:
         if result:
             return DocumentInDB(**result)
         return None
+
+    def update_document_status(
+        self,
+        document_id: str,
+        status: 'DocumentStatus'
+    ) -> bool:
+        """
+        Update document status (synchronous for Celery tasks).
+
+        Args:
+            document_id: Document ID
+            status: New status
+
+        Returns:
+            True if updated, False otherwise
+        """
+        try:
+            from pymongo import MongoClient
+            from app.config import settings
+
+            # Create sync MongoDB client for Celery task
+            client = MongoClient(settings.MONGODB_URL)
+            db = client[settings.DATABASE_NAME]
+            collection = db['documents']
+
+            doc_id = ObjectId(document_id)
+            result = collection.update_one(
+                {'_id': doc_id},
+                {
+                    '$set': {
+                        'status': status.value,
+                        'updated_at': datetime.utcnow()
+                    }
+                }
+            )
+
+            client.close()
+            return result.modified_count > 0
+
+        except Exception as e:
+            logger.error(f"Failed to update document status: {str(e)}")
+            return False
 
     async def delete_document(self, document_id: str, user_id: str) -> bool:
         """

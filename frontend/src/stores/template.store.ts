@@ -27,8 +27,8 @@ export const useTemplateStore = create<TemplateState>((set, get) => ({
   fetchTemplates: async (params) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await templateService.getTemplates(params);
-      set({ templates: response.items, isLoading: false });
+      const templates = await templateService.getTemplates(params);
+      set({ templates, isLoading: false });
     } catch (error: any) {
       set({
         error: error.response?.data?.detail || 'Failed to fetch templates',

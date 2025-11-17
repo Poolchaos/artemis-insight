@@ -29,8 +29,8 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   fetchDocuments: async (params) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await documentService.getDocuments(params);
-      set({ documents: response.items, isLoading: false });
+      const documents = await documentService.getDocuments(params);
+      set({ documents, isLoading: false });
     } catch (error: any) {
       set({
         error: error.response?.data?.detail || 'Failed to fetch documents',

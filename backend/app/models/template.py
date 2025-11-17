@@ -6,7 +6,7 @@ Templates define the structure and AI guidance for different types of summaries.
 
 from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from bson import ObjectId
 
 
@@ -126,7 +126,7 @@ class TemplateInDB(TemplateBase):
 class TemplateResponse(BaseModel):
     """Template model for API responses."""
 
-    id: str = Field(alias="_id")
+    id: str = Field(alias="_id", serialization_alias="id")
     name: str
     description: str
     target_length: str
@@ -140,11 +140,12 @@ class TemplateResponse(BaseModel):
     updated_at: datetime
     usage_count: int
 
-    class Config:
-        populate_by_name = True
-        json_encoders = {
+    model_config = ConfigDict(
+        populate_by_name=True,
+        json_encoders={
             datetime: lambda v: v.isoformat()
         }
+    )
 
 
 # Pre-defined templates for seeding the database

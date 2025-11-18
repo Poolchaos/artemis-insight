@@ -1,6 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { TutorialProvider } from './contexts/TutorialContext';
+import { TutorialAutoStart } from './components/TutorialAutoStart';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
@@ -41,7 +43,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <BrowserRouter>
-          <Routes>
+          <TutorialProvider>
+            <TutorialAutoStart />
+            <Routes>
             {/* Auth Routes */}
             <Route
               path="/login"
@@ -180,6 +184,7 @@ function App() {
               element={<Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />}
             />
           </Routes>
+          </TutorialProvider>
         </BrowserRouter>
       </ThemeProvider>
     </QueryClientProvider>

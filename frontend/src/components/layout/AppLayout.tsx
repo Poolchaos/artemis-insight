@@ -8,11 +8,13 @@ import {
   DocumentCheckIcon,
   ArrowRightOnRectangleIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  AcademicCapIcon
 } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 import ThemeToggle from '../ThemeToggle';
 import { useAuthStore } from '../../stores/auth.store';
+import { useTutorial } from '../../contexts/TutorialContext';
 import { cn } from '../../lib/utils';
 
 interface AppLayoutProps {
@@ -20,11 +22,11 @@ interface AppLayoutProps {
 }
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
-  { name: 'Documents', href: '/documents', icon: DocumentTextIcon },
-  { name: 'Templates', href: '/templates', icon: RectangleStackIcon },
-  { name: 'Process', href: '/process', icon: SparklesIcon },
-  { name: 'Summaries', href: '/summaries', icon: DocumentCheckIcon },
+  { name: 'Dashboard', href: '/dashboard', icon: HomeIcon, dataTour: 'dashboard-nav' },
+  { name: 'Documents', href: '/documents', icon: DocumentTextIcon, dataTour: 'documents-nav' },
+  { name: 'Templates', href: '/templates', icon: RectangleStackIcon, dataTour: 'templates-nav' },
+  { name: 'Process', href: '/process', icon: SparklesIcon, dataTour: 'process-nav' },
+  { name: 'Summaries', href: '/summaries', icon: DocumentCheckIcon, dataTour: 'summaries-nav' },
   // { name: 'Search', href: '/search', icon: MagnifyingGlassIcon }, // Temporarily disabled
 ];
 
@@ -33,6 +35,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const { resetTutorial } = useTutorial();
 
   const handleLogout = () => {
     logout();
@@ -77,6 +80,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
               <Link
                 key={item.name}
                 to={item.href}
+                data-tour={item.dataTour}
                 className={cn(
                   'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
                   isActive
@@ -107,6 +111,13 @@ const AppLayout = ({ children }: AppLayoutProps) => {
               </p>
             </div>
           </div>
+          <button
+            onClick={() => resetTutorial(navigate)}
+            className="w-full flex items-center gap-2 px-4 py-2 mb-2 text-sm text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+          >
+            <AcademicCapIcon className="h-5 w-5" />
+            Restart Tutorial
+          </button>
           <button
             onClick={handleLogout}
             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"

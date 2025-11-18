@@ -77,6 +77,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
+        data-tour="upload-button"
         className={`
           relative border-2 border-dashed rounded-lg p-12 text-center
           transition-colors duration-200

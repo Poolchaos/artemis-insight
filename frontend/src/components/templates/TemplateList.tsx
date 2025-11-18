@@ -73,7 +73,7 @@ export function TemplateList() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-tour="template-list">
       {/* Header Actions */}
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
         {/* Search */}

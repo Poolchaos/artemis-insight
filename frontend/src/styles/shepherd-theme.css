@@ -1,0 +1,158 @@
+/* Custom Shepherd.js theme following Artemis Insight design system */
+
+.shepherd-theme-custom.shepherd-element {
+  background-color: white;
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  border-radius: 0.75rem;
+  border: 1px solid rgb(229 231 235);
+  max-width: 400px;
+  z-index: 9999;
+}
+
+.dark .shepherd-theme-custom.shepherd-element {
+  background-color: rgb(31 41 55);
+  border-color: rgb(55 65 81);
+}
+
+.shepherd-theme-custom .shepherd-content {
+  padding: 0;
+  background: transparent;
+}
+
+.shepherd-theme-custom .shepherd-text {
+  color: rgb(55 65 81);
+  padding: 1.5rem;
+  padding-bottom: 1rem;
+}
+
+.dark .shepherd-theme-custom .shepherd-text {
+  color: rgb(229 231 235);
+}
+
+/* Override default Shepherd header styles with higher specificity */
+.shepherd-theme-custom.shepherd-has-title .shepherd-content .shepherd-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid rgb(229 231 235);
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+}
+
+.dark .shepherd-theme-custom.shepherd-has-title .shepherd-content .shepherd-header {
+  border-bottom-color: rgb(55 65 81);
+  background: rgb(31 41 55);
+}
+
+.shepherd-theme-custom .shepherd-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: rgb(17 24 39);
+  margin: 0;
+  line-height: 1.75rem;
+}
+
+.dark .shepherd-theme-custom .shepherd-title {
+  color: white;
+}
+
+/* Title icon colors - using theme primary colors */
+.shepherd-theme-custom .shepherd-title svg {
+  color: rgb(37 99 235);
+  flex-shrink: 0;
+}
+
+.dark .shepherd-theme-custom .shepherd-title svg {
+  color: rgb(96 165 250);
+}
+
+.shepherd-theme-custom .shepherd-cancel-icon {
+  color: rgb(156 163 175);
+  transition: color 0.2s;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+}
+
+.dark .shepherd-theme-custom .shepherd-cancel-icon {
+  color: rgb(156 163 175);
+}
+
+.shepherd-theme-custom .shepherd-cancel-icon:hover {
+  background-color: rgb(243 244 246);
+  color: rgb(107 114 128);
+}
+
+.dark .shepherd-theme-custom .shepherd-cancel-icon:hover {
+  background-color: rgb(55 65 81);
+  color: rgb(209 213 219);
+}
+
+.shepherd-theme-custom .shepherd-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid rgb(229 231 235);
+  margin-top: 0;
+}
+
+.dark .shepherd-theme-custom .shepherd-footer {
+  border-top-color: rgb(55 65 81);
+}
+
+.shepherd-theme-custom .shepherd-button {
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 1rem;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+  line-height: 1.5;
+}
+
+.shepherd-theme-custom .shepherd-button:not(.shepherd-button-secondary) {
+  background-color: rgb(37 99 235);
+  color: white;
+}
+
+.shepherd-theme-custom .shepherd-button:not(.shepherd-button-secondary):hover {
+  background-color: rgb(29 78 216);
+}
+
+.shepherd-theme-custom .shepherd-button-secondary {
+  background-color: rgb(243 244 246);
+  color: rgb(55 65 81);
+  border: 2px solid rgb(209 213 219);
+}
+
+.dark .shepherd-theme-custom .shepherd-button-secondary {
+  background-color: transparent;
+  color: rgb(209 213 219);
+  border-color: rgb(75 85 99);
+}
+
+.shepherd-theme-custom .shepherd-button-secondary:hover {
+  background-color: rgb(229 231 235);
+}
+
+.dark .shepherd-theme-custom .shepherd-button-secondary:hover {
+  background-color: rgb(55 65 81);
+}
+
+.shepherd-modal-overlay-container {
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+}
+
+.shepherd-theme-custom .shepherd-arrow::before {
+  background-color: white;
+  border-color: rgb(229 231 235);
+}
+
+.dark .shepherd-theme-custom .shepherd-arrow::before {
+  background-color: rgb(31 41 55);
+  border-color: rgb(55 65 81);
+}

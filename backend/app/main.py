@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 
 from app.config import settings
 from app.database import db_manager, get_db
-from app.routes import auth, documents, templates, summaries, jobs
+from app.routes import auth, documents, templates, summaries, jobs, batch
 from app.services.template_service import TemplateService
 from bson import ObjectId
 
@@ -68,6 +68,7 @@ def create_application() -> FastAPI:
     application.include_router(templates.router)
     application.include_router(summaries.router)
     application.include_router(jobs.router)
+    application.include_router(batch.router)
 
     # Health check endpoint
     @application.get("/health")

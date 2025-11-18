@@ -60,6 +60,14 @@ from app.models.api_usage import (
     ApiUsageStats
 )
 
+from app.models.batch_job import (
+    BatchJob,
+    BatchJobType,
+    BatchJobStatus,
+    BatchItemStatus,
+    DocumentCollection
+)
+
 __all__ = [
     # User models
     "PyObjectId",
@@ -112,4 +120,11 @@ __all__ = [
     "ApiUsageInDB",
     "ApiUsageResponse",
     "ApiUsageStats",
+
+    # Batch Job models
+    "BatchJob",
+    "BatchJobType",
+    "BatchJobStatus",
+    "BatchItemStatus",
+    "DocumentCollection",
 ]

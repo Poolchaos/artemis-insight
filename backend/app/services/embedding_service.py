@@ -179,7 +179,7 @@ class EmbeddingService:
             # Batch insert to database
             result = await self.collection.insert_many(embedding_docs)
             embedding_ids.extend([str(oid) for oid in result.inserted_ids])
-            
+
             logger.info(f"Batch {batch_num}/{total_batches} completed: {len(result.inserted_ids)} embeddings saved")
 
         logger.info(f"All embeddings generated: {len(embedding_ids)} total")

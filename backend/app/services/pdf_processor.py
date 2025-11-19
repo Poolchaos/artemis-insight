@@ -110,7 +110,7 @@ class PDFProcessor:
             for page_num in range(total_pages):
                 if page_num % 10 == 0 and page_num > 0:
                     logger.info(f"Extracted text from {page_num}/{total_pages} pages")
-                
+
                 page = pdf_doc[page_num]
                 text = page.get_text("text")  # Fast text extraction
 
@@ -237,7 +237,7 @@ class PDFProcessor:
         # Split into words for accurate tracking
         all_words = full_text.split()
         total_words = len(all_words)
-        
+
         logger.info(f"Processing {total_words} words into {self.chunk_size}-word chunks")
 
         # Build page position map (character-based)

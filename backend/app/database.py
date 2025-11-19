@@ -16,8 +16,16 @@ class DatabaseManager:
         self.db: Optional[AsyncIOMotorDatabase] = None
 
     async def connect(self) -> None:
-        """Establish MongoDB connection."""
-        self.client = AsyncIOMotorClient(settings.mongo_uri)
+        """Establish MongoDB connection with connection pooling."""
+        self.client = AsyncIOMotorClient(
+            settings.mongo_uri,
+            maxPoolSize=50,  # Maximum connections in pool
+            minPoolSize=10,  # Minimum connections to maintain
+            maxIdleTimeMS=30000,  # Close idle connections after 30s
+            serverSelectionTimeoutMS=5000,  # Timeout for server selection
+            connectTimeoutMS=10000,  # Timeout for initial connection
+            socketTimeoutMS=20000,  # Timeout for socket operations
+        )
         self.db = self.client.get_default_database()
 
         # Verify connection

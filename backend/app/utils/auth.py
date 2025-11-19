@@ -10,7 +10,13 @@ from passlib.context import CryptContext
 from app.config import settings
 from app.models.user import TokenPayload
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Optimize bcrypt for production performance
+# rounds=10 is secure and 4x faster than default rounds=12
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__rounds=10  # Reduced from default 12 for better performance
+)
 
 
 def hash_password(password: str) -> str:

@@ -137,7 +137,7 @@ services:
     image: artemis-insight-backend:latest
     container_name: artemis-insight-celery-worker
     restart: unless-stopped
-    command: celery -A app.celery_app worker --loglevel=info --concurrency=2
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=4 --max-tasks-per-child=50 --time-limit=1800 --soft-time-limit=1700
     environment:
       # Application
       APP_NAME: ${APP_NAME:-Artemis Insight}

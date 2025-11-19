@@ -44,7 +44,7 @@ export const jobService = {
 
     return new Promise((resolve, reject) => {
       const poll = async () => {
-        try:
+        try {
           // Check timeout
           if (Date.now() - startTime > timeout) {
             reject(new Error('Job polling timeout - task may still be processing. Check job status later or contact support.'));

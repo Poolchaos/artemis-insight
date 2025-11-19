@@ -266,11 +266,11 @@ export default function SummaryViewPage() {
                   <>
                     <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
                     Export
-                  </>
+                  </>)
                 )}
               </Button>
-            {showExportMenu && !isExporting && (
-              <div
+              {showExportMenu && !isExporting && (
+                <div
                 className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700"
                 onClick={(e) => e.stopPropagation()}
               >

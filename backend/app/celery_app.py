@@ -22,10 +22,14 @@ celery_app.conf.update(
     timezone="Africa/Johannesburg",
     enable_utc=True,
     task_track_started=True,
-    task_time_limit=3600,  # 1 hour max
+    task_time_limit=3600,  # 1 hour hard limit
     task_soft_time_limit=3300,  # 55 minutes soft limit
-    worker_prefetch_multiplier=2,  # Prefetch 2 tasks per worker for better throughput
+    task_acks_late=True,  # Acknowledge after task completion (enable retry on crash)
+    task_reject_on_worker_lost=True,  # Re-queue if worker dies
+    worker_prefetch_multiplier=1,  # Prevent task hoarding, process one at a time
     worker_max_tasks_per_child=50,  # Restart after 50 tasks to prevent memory leaks
     broker_connection_retry_on_startup=True,
     broker_pool_limit=10,  # Connection pool size
+    task_send_sent_event=True,  # Track task events for monitoring
+    worker_send_task_events=True,  # Enable task event monitoring
 )

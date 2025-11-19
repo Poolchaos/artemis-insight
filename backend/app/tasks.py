@@ -154,7 +154,16 @@ def process_document_task(
         }
 
 
-@celery_app.task(bind=True, name="app.tasks.generate_summary")
+@celery_app.task(
+    bind=True,
+    name="app.tasks.generate_summary",
+    autoretry_for=(Exception,),  # Auto-retry on any exception
+    retry_kwargs={'max_retries': 2, 'countdown': 60},  # Retry up to 2 times with 60s delay
+    retry_backoff=True,  # Exponential backoff
+    retry_jitter=True,  # Add randomness to backoff to prevent thundering herd
+    time_limit=3600,  # 1 hour hard limit
+    soft_time_limit=3300  # 55 minutes soft limit
+)
 def generate_summary_task(
     self,
     document_id: str,

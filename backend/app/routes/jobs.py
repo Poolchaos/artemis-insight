@@ -6,11 +6,13 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
+from datetime import datetime
 
 from app.database import get_db
 from app.models.user import UserInDB
 from app.models.job import JobResponse, JobStatus, JobType
 from app.middleware.auth import get_current_user
+from app.utils.task_monitor import auto_fail_stuck_jobs
 
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
@@ -205,7 +207,6 @@ async def cancel_job(
         celery_app.control.revoke(job["celery_task_id"], terminate=True)
 
     # Update job status
-    from datetime import datetime
     await db.jobs.update_one(
         {"_id": ObjectId(job_id)},
         {
@@ -236,3 +237,25 @@ async def cancel_job(
         created_at=updated_job["created_at"],
         updated_at=updated_job["updated_at"]
     )
+
+
+@router.post("/cleanup-stuck", response_model=dict)
+async def cleanup_stuck_jobs(
+    current_user: UserInDB = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """
+    Detect and auto-fail stuck jobs (admin utility).
+
+    Jobs stuck in PENDING or RUNNING for more than 60 minutes are marked as FAILED.
+    This helps recover from crashed workers or network issues.
+
+    Returns:
+        Number of jobs marked as failed
+    """
+    failed_count = await auto_fail_stuck_jobs(db, timeout_minutes=60)
+
+    return {
+        "message": f"Cleaned up {failed_count} stuck job(s)",
+        "failed_count": failed_count
+    }

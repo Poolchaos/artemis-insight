@@ -38,16 +38,16 @@ export const jobService = {
     jobId: string,
     onProgress?: (job: Job) => void,
     pollInterval: number = 2000,
-    timeout: number = 300000 // 5 minutes default
+    timeout: number = 600000 // 10 minutes default (increased from 5)
   ): Promise<Job> {
     const startTime = Date.now();
 
     return new Promise((resolve, reject) => {
       const poll = async () => {
-        try {
+        try:
           // Check timeout
           if (Date.now() - startTime > timeout) {
-            reject(new Error('Job polling timeout'));
+            reject(new Error('Job polling timeout - task may still be processing. Check job status later or contact support.'));
             return;
           }
 

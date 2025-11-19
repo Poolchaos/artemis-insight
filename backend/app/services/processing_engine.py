@@ -9,9 +9,11 @@ Implements a 4-pass approach:
 """
 
 import asyncio
-from typing import List, Dict, Any, Optional
+import time
+import logging
+from typing import List, Dict, Any, Optional, Callable
 from datetime import datetime, timezone
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, APITimeoutError, RateLimitError, APIError
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
 
@@ -21,9 +23,16 @@ from app.services.embedding_service import EmbeddingService
 from app.models.template import TemplateInDB, TemplateSection
 from app.models.embedding import EmbeddingSearchQuery
 
+logger = logging.getLogger(__name__)
+
 
 class ProcessingEngine:
     """Multi-pass document processing engine."""
+
+    # Retry configuration
+    MAX_RETRIES = 3
+    RETRY_DELAY_BASE = 2  # seconds
+    OPENAI_TIMEOUT = 120  # seconds per API call
 
     def __init__(self, db: AsyncIOMotorDatabase):
         """
@@ -35,14 +44,17 @@ class ProcessingEngine:
         self.db = db
         self.pdf_processor = PDFProcessor()
         self.embedding_service = EmbeddingService(db)
-        self.openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
+        self.openai_client = AsyncOpenAI(
+            api_key=settings.openai_api_key,
+            timeout=self.OPENAI_TIMEOUT
+        )
 
     async def process_document(
         self,
         document_id: str,
         file_path: str,
         template: TemplateInDB,
-        progress_callback: Optional[callable] = None
+        progress_callback: Optional[Callable[[str, str], None]] = None
     ) -> Dict[str, Any]:
         """
         Process a document through all 4 passes.
@@ -51,7 +63,7 @@ class ProcessingEngine:
             document_id: MongoDB document ID
             file_path: Path to PDF file
             template: Template to use for summarization
-            progress_callback: Optional callback for progress updates
+            progress_callback: Optional callback for progress updates (sync function)
 
         Returns:
             Dictionary with processed sections and metadata
@@ -68,8 +80,9 @@ class ProcessingEngine:
         try:
             # Pass 1: Document Indexing
             if progress_callback:
-                await progress_callback("pass_1", "Extracting text and creating chunks")
+                progress_callback("pass_1", "Extracting text and creating chunks")
 
+            logger.info(f"Starting Pass 1: Document indexing for {document_id}")
             indexing_result = await self._pass_1_index_document(
                 document_id, file_path, template
             )
@@ -79,13 +92,18 @@ class ProcessingEngine:
             result["metadata"]["total_chunks"] = indexing_result["total_chunks"]
             result["metadata"]["embedding_count"] = indexing_result["embedding_count"]
 
-            # Pass 2, 3, 4: Process each section
-            for section in template.sections:
+            logger.info(f"Pass 1 completed: {indexing_result['total_chunks']} chunks, {indexing_result['embedding_count']} embeddings")
+
+            # Pass 2, 3, 4: Process each section with progress tracking
+            total_sections = len(template.sections)
+            for idx, section in enumerate(template.sections, 1):
                 if progress_callback:
-                    await progress_callback(
+                    progress_callback(
                         "section_processing",
-                        f"Processing section: {section.title}"
+                        f"Processing section {idx}/{total_sections}: {section.title}"
                     )
+
+                logger.info(f"Processing section {idx}/{total_sections}: {section.title}")
 
                 section_result = await self._process_section(
                     document_id,
@@ -95,11 +113,15 @@ class ProcessingEngine:
                 )
 
                 result["sections"].append(section_result)
+                logger.info(f"Section '{section.title}' completed: {section_result['word_count']} words")
 
             result["completed_at"] = datetime.now(timezone.utc)
             result["status"] = "completed"
 
+            logger.info(f"Document processing completed: {len(result['sections'])} sections generated")
+
         except Exception as e:
+            logger.error(f"Document processing failed: {str(e)}", exc_info=True)
             result["status"] = "failed"
             result["error"] = str(e)
             result["failed_at"] = datetime.now(timezone.utc)
@@ -258,6 +280,7 @@ class ProcessingEngine:
     ) -> str:
         """
         Pass 3: Use OpenAI to synthesize section content from relevant chunks.
+        Includes retry logic with exponential backoff for transient failures.
 
         Args:
             section: Template section
@@ -268,6 +291,7 @@ class ProcessingEngine:
             Synthesized section content
         """
         if not relevant_chunks:
+            logger.warning(f"No relevant chunks found for section: {section.title}")
             return f"No relevant content found for section: {section.title}"
 
         # Build context from chunks
@@ -303,19 +327,54 @@ class ProcessingEngine:
 
 Write the section content now:"""
 
-        # Call OpenAI
+        # Call OpenAI with retry logic
         strategy = template.processing_strategy
-        response = await self.openai_client.chat.completions.create(
-            model=strategy.summarization_model,
-            messages=[
-                {"role": "system", "content": template.system_prompt},
-                {"role": "user", "content": synthesis_prompt}
-            ],
-            max_tokens=strategy.max_tokens_per_section,
-            temperature=strategy.temperature
-        )
 
-        return response.choices[0].message.content.strip()
+        for attempt in range(1, self.MAX_RETRIES + 1):
+            try:
+                logger.info(f"OpenAI API call attempt {attempt}/{self.MAX_RETRIES} for section: {section.title}")
+
+                response = await self.openai_client.chat.completions.create(
+                    model=strategy.summarization_model,
+                    messages=[
+                        {"role": "system", "content": template.system_prompt},
+                        {"role": "user", "content": synthesis_prompt}
+                    ],
+                    max_tokens=strategy.max_tokens_per_section,
+                    temperature=strategy.temperature
+                )
+
+                content = response.choices[0].message.content.strip()
+                logger.info(f"OpenAI API call successful for section: {section.title} ({len(content)} chars)")
+                return content
+
+            except APITimeoutError as e:
+                logger.warning(f"OpenAI API timeout (attempt {attempt}/{self.MAX_RETRIES}): {str(e)}")
+                if attempt == self.MAX_RETRIES:
+                    raise Exception(f"OpenAI API timeout after {self.MAX_RETRIES} attempts. Please try again later.") from e
+                await asyncio.sleep(self.RETRY_DELAY_BASE ** attempt)
+
+            except RateLimitError as e:
+                logger.warning(f"OpenAI rate limit hit (attempt {attempt}/{self.MAX_RETRIES}): {str(e)}")
+                if attempt == self.MAX_RETRIES:
+                    raise Exception(f"OpenAI rate limit exceeded. Please wait a few minutes and try again.") from e
+                # Exponential backoff for rate limits
+                await asyncio.sleep(self.RETRY_DELAY_BASE ** (attempt + 1))
+
+            except APIError as e:
+                logger.error(f"OpenAI API error (attempt {attempt}/{self.MAX_RETRIES}): {str(e)}")
+                if attempt == self.MAX_RETRIES:
+                    raise Exception(f"OpenAI API error: {str(e)}") from e
+                await asyncio.sleep(self.RETRY_DELAY_BASE ** attempt)
+
+            except Exception as e:
+                logger.error(f"Unexpected error calling OpenAI (attempt {attempt}/{self.MAX_RETRIES}): {str(e)}", exc_info=True)
+                if attempt == self.MAX_RETRIES:
+                    raise
+                await asyncio.sleep(self.RETRY_DELAY_BASE ** attempt)
+
+        # Should never reach here, but for safety
+        raise Exception("Failed to synthesize section after maximum retries")
 
     async def regenerate_section(
         self,

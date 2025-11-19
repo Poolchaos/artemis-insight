@@ -89,4 +89,14 @@ export const summaryService = {
   async deleteSummary(summaryId: string): Promise<void> {
     await api.delete(`/api/summaries/${summaryId}`);
   },
+
+  /**
+   * Retry a failed summary generation
+   */
+  async retrySummary(summaryId: string): Promise<{ job_id: string; status: string; message: string }> {
+    const response = await api.post<{ job_id: string; celery_task_id: string; status: string; message: string }>(
+      `/api/summaries/${summaryId}/retry`
+    );
+    return response.data;
+  },
 };

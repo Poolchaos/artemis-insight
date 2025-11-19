@@ -288,6 +288,119 @@ async def delete_summary(
     return None
 
 
+@router.post("/{summary_id}/retry", response_model=dict, status_code=status.HTTP_202_ACCEPTED)
+async def retry_failed_summary(
+    summary_id: str,
+    current_user: UserInDB = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_db)
+):
+    """
+    Retry a failed summary generation.
+
+    Creates a new job to regenerate the summary using the same document and template.
+    Only works for summaries with 'failed' status.
+
+    Returns:
+    - **job_id**: ID for tracking the new job status
+    - **message**: Instructions for polling job status
+    """
+    if not ObjectId.is_valid(summary_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid summary_id format"
+        )
+
+    # Get the failed summary
+    summary = await db.summaries.find_one({
+        "_id": ObjectId(summary_id),
+        "user_id": ObjectId(current_user.id)
+    })
+
+    if not summary:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Summary not found"
+        )
+
+    if summary["status"] != SummaryStatus.FAILED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Can only retry failed summaries. Current status: {summary['status']}"
+        )
+
+    document_id = str(summary["document_id"])
+    template_id = summary["template_id"]
+
+    # Verify document still exists and is ready
+    doc_service = DocumentService(db)
+    document = await doc_service.get_document_by_user(document_id, str(current_user.id))
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Original document not found"
+        )
+
+    if document.status != DocumentStatus.COMPLETED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Document must be 'completed' to retry. Current status: {document.status}"
+        )
+
+    # Verify template still exists
+    template_service = TemplateService(db)
+    template = await template_service.get_template(template_id)
+
+    if not template:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Original template not found"
+        )
+
+    # Delete the old failed summary
+    await db.summaries.delete_one({"_id": ObjectId(summary_id)})
+
+    # Create new job record
+    job_id = ObjectId()
+    job_doc = {
+        "_id": job_id,
+        "user_id": current_user.id,
+        "document_id": ObjectId(document_id),
+        "template_id": ObjectId(template_id),
+        "job_type": JobType.SUMMARIZE,
+        "status": JobStatus.PENDING,
+        "progress": 0,
+        "started_at": datetime.utcnow(),
+        "created_at": datetime.utcnow(),
+        "updated_at": datetime.utcnow()
+    }
+
+    await db.jobs.insert_one(job_doc)
+
+    # Start Celery task
+    task = generate_summary_task.apply_async(
+        kwargs={
+            "document_id": document_id,
+            "template_id": template_id,
+            "user_id": str(current_user.id),
+            "job_id": str(job_id)
+        }
+    )
+
+    # Update job with celery_task_id
+    await db.jobs.update_one(
+        {"_id": job_id},
+        {"$set": {"celery_task_id": task.id}}
+    )
+
+    return {
+        "job_id": str(job_id),
+        "celery_task_id": task.id,
+        "status": JobStatus.PENDING,
+        "message": f"Retry job created. Poll GET /api/jobs/{str(job_id)} for status."
+    }
+
+
 @router.post("/{summary_id}/regenerate-section", response_model=dict, status_code=status.HTTP_202_ACCEPTED)
 async def regenerate_summary_section(
     summary_id: str,

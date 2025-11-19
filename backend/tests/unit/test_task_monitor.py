@@ -16,10 +16,10 @@ async def test_db_with_jobs(test_db):
     # Clear existing data
     await test_db.jobs.delete_many({})
     await test_db.summaries.delete_many({})
-    
+
     # Create current time reference
     now = datetime.utcnow()
-    
+
     # Job 1: Stuck RUNNING job (2 hours old)
     stuck_running_id = ObjectId()
     await test_db.jobs.insert_one({
@@ -34,7 +34,7 @@ async def test_db_with_jobs(test_db):
         "updated_at": now - timedelta(hours=2),
         "started_at": now - timedelta(hours=2)
     })
-    
+
     # Create associated summary for stuck job
     await test_db.summaries.insert_one({
         "_id": ObjectId(),
@@ -49,7 +49,7 @@ async def test_db_with_jobs(test_db):
         "updated_at": now - timedelta(hours=2),
         "started_at": now - timedelta(hours=2)
     })
-    
+
     # Job 2: Stuck PENDING job (90 minutes old)
     stuck_pending_id = ObjectId()
     await test_db.jobs.insert_one({
@@ -64,7 +64,7 @@ async def test_db_with_jobs(test_db):
         "updated_at": now - timedelta(minutes=90),
         "started_at": now - timedelta(minutes=90)
     })
-    
+
     # Job 3: Recently updated RUNNING job (5 minutes old)
     recent_running_id = ObjectId()
     await test_db.jobs.insert_one({
@@ -79,7 +79,7 @@ async def test_db_with_jobs(test_db):
         "updated_at": now - timedelta(minutes=5),
         "started_at": now - timedelta(minutes=10)
     })
-    
+
     # Job 4: Completed job (1 hour old)
     completed_id = ObjectId()
     await test_db.jobs.insert_one({
@@ -96,7 +96,7 @@ async def test_db_with_jobs(test_db):
         "started_at": now - timedelta(hours=1),
         "completed_at": now - timedelta(hours=1)
     })
-    
+
     # Job 5: Failed job (30 minutes old)
     failed_id = ObjectId()
     await test_db.jobs.insert_one({
@@ -113,9 +113,9 @@ async def test_db_with_jobs(test_db):
         "started_at": now - timedelta(minutes=30),
         "completed_at": now - timedelta(minutes=30)
     })
-    
+
     yield test_db
-    
+
     # Cleanup
     await test_db.jobs.delete_many({})
     await test_db.summaries.delete_many({})
@@ -128,7 +128,7 @@ class TestDetectStuckJobs:
     async def test_detect_stuck_jobs_default_timeout(self, test_db_with_jobs):
         """Test detecting stuck jobs with default 60-minute timeout."""
         stuck_job_ids = await detect_stuck_jobs(test_db_with_jobs, timeout_minutes=60)
-        
+
         # Should detect 2 stuck jobs (2 hours and 90 minutes old)
         assert len(stuck_job_ids) == 2
 
@@ -137,7 +137,7 @@ class TestDetectStuckJobs:
         """Test detecting stuck jobs with custom timeout."""
         # Use 30-minute timeout
         stuck_job_ids = await detect_stuck_jobs(test_db_with_jobs, timeout_minutes=30)
-        
+
         # Should detect 2 stuck jobs (both over 30 minutes)
         assert len(stuck_job_ids) == 2
 
@@ -146,15 +146,15 @@ class TestDetectStuckJobs:
         """Test detecting stuck jobs with very strict timeout."""
         # Use 3-minute timeout
         stuck_job_ids = await detect_stuck_jobs(test_db_with_jobs, timeout_minutes=3)
-        
-        # Should detect 2 stuck jobs (recent one updated 5 min ago excluded)
-        assert len(stuck_job_ids) == 2
+
+        # Should detect 3 stuck jobs (all jobs: 2hrs, 90min, and 5min are all > 3min)
+        assert len(stuck_job_ids) == 3
 
     @pytest.mark.asyncio
     async def test_no_stuck_jobs_when_all_recent(self, test_db):
         """Test detection when all jobs are recent."""
         now = datetime.utcnow()
-        
+
         # Create only recent jobs
         await test_db.jobs.insert_one({
             "_id": ObjectId(),
@@ -168,9 +168,9 @@ class TestDetectStuckJobs:
             "updated_at": now - timedelta(minutes=1),
             "started_at": now - timedelta(minutes=5)
         })
-        
+
         stuck_job_ids = await detect_stuck_jobs(test_db, timeout_minutes=60)
-        
+
         # Should detect no stuck jobs
         assert len(stuck_job_ids) == 0
 
@@ -178,14 +178,14 @@ class TestDetectStuckJobs:
     async def test_completed_jobs_not_detected(self, test_db_with_jobs):
         """Test that completed jobs are not detected as stuck."""
         stuck_job_ids = await detect_stuck_jobs(test_db_with_jobs, timeout_minutes=30)
-        
+
         # Verify completed and failed jobs are not in results
         all_jobs = await test_db_with_jobs.jobs.find({}).to_list(length=100)
         completed_job_ids = [
-            str(job["_id"]) for job in all_jobs 
+            str(job["_id"]) for job in all_jobs
             if job["status"] in [JobStatus.COMPLETED, JobStatus.FAILED]
         ]
-        
+
         for job_id in completed_job_ids:
             assert job_id not in stuck_job_ids
 
@@ -198,18 +198,18 @@ class TestAutoFailStuckJobs:
         """Test automatically marking stuck jobs as failed."""
         # Mark stuck jobs as failed
         failed_count = await auto_fail_stuck_jobs(test_db_with_jobs, timeout_minutes=60)
-        
+
         # Should have failed 2 jobs
         assert failed_count == 2
-        
+
         # Verify jobs were updated
         failed_jobs = await test_db_with_jobs.jobs.find({
             "status": JobStatus.FAILED,
             "error_message": {"$regex": "timed out"}
         }).to_list(length=10)
-        
+
         assert len(failed_jobs) == 2
-        
+
         # Verify all failed jobs have proper fields
         for job in failed_jobs:
             assert job["status"] == JobStatus.FAILED
@@ -225,15 +225,15 @@ class TestAutoFailStuckJobs:
             "status": JobStatus.RUNNING,
             "updated_at": {"$lt": datetime.utcnow() - timedelta(hours=1)}
         })
-        
+
         stuck_job_id = stuck_job["_id"]
-        
+
         # Mark stuck jobs as failed
         await auto_fail_stuck_jobs(test_db_with_jobs, timeout_minutes=60)
-        
+
         # Verify associated summary was updated
         summary = await test_db_with_jobs.summaries.find_one({"job_id": stuck_job_id})
-        
+
         assert summary is not None
         assert summary["status"] == "failed"
         assert "timeout" in summary["error_message"].lower()
@@ -244,7 +244,7 @@ class TestAutoFailStuckJobs:
     async def test_auto_fail_no_stuck_jobs(self, test_db):
         """Test auto-fail when there are no stuck jobs."""
         now = datetime.utcnow()
-        
+
         # Create only recent jobs
         await test_db.jobs.insert_one({
             "_id": ObjectId(),
@@ -258,10 +258,10 @@ class TestAutoFailStuckJobs:
             "updated_at": now - timedelta(minutes=1),
             "started_at": now - timedelta(minutes=5)
         })
-        
+
         # Try to fail stuck jobs
         failed_count = await auto_fail_stuck_jobs(test_db, timeout_minutes=60)
-        
+
         # Should have failed 0 jobs
         assert failed_count == 0
 
@@ -270,7 +270,7 @@ class TestAutoFailStuckJobs:
         """Test auto-fail with custom timeout."""
         # Use 30-minute timeout
         failed_count = await auto_fail_stuck_jobs(test_db_with_jobs, timeout_minutes=30)
-        
+
         # Should have failed 2 jobs (both over 30 minutes)
         assert failed_count == 2
 
@@ -279,13 +279,13 @@ class TestAutoFailStuckJobs:
         """Test that error messages include timeout information."""
         timeout_minutes = 60
         await auto_fail_stuck_jobs(test_db_with_jobs, timeout_minutes=timeout_minutes)
-        
+
         # Get failed jobs
         failed_jobs = await test_db_with_jobs.jobs.find({
             "status": JobStatus.FAILED,
             "error_message": {"$regex": "timed out"}
         }).to_list(length=10)
-        
+
         # Verify error messages contain timeout duration
         for job in failed_jobs:
             assert f">{timeout_minutes} minutes" in job["error_message"]
@@ -299,7 +299,7 @@ class TestStuckJobEdgeCases:
         """Test job that is exactly at the timeout boundary."""
         now = datetime.utcnow()
         timeout_minutes = 60
-        
+
         # Create job exactly 60 minutes old
         await test_db.jobs.insert_one({
             "_id": ObjectId(),
@@ -313,7 +313,7 @@ class TestStuckJobEdgeCases:
             "updated_at": now - timedelta(minutes=timeout_minutes),
             "started_at": now - timedelta(minutes=timeout_minutes)
         })
-        
+
         # Should detect as stuck (using less-than, so boundary is included)
         stuck_job_ids = await detect_stuck_jobs(test_db, timeout_minutes=timeout_minutes)
         assert len(stuck_job_ids) == 1
@@ -323,7 +323,7 @@ class TestStuckJobEdgeCases:
         """Test job that is just under the timeout threshold."""
         now = datetime.utcnow()
         timeout_minutes = 60
-        
+
         # Create job 59 minutes old
         await test_db.jobs.insert_one({
             "_id": ObjectId(),
@@ -337,7 +337,7 @@ class TestStuckJobEdgeCases:
             "updated_at": now - timedelta(minutes=59),
             "started_at": now - timedelta(minutes=59)
         })
-        
+
         # Should not detect as stuck
         stuck_job_ids = await detect_stuck_jobs(test_db, timeout_minutes=timeout_minutes)
         assert len(stuck_job_ids) == 0
@@ -347,7 +347,7 @@ class TestStuckJobEdgeCases:
         """Test detecting multiple stuck jobs for the same user."""
         now = datetime.utcnow()
         user_id = ObjectId()
-        
+
         # Create 3 stuck jobs for same user
         for i in range(3):
             await test_db.jobs.insert_one({
@@ -362,11 +362,11 @@ class TestStuckJobEdgeCases:
                 "updated_at": now - timedelta(hours=2),
                 "started_at": now - timedelta(hours=2)
             })
-        
+
         # Should detect all 3
         stuck_job_ids = await detect_stuck_jobs(test_db, timeout_minutes=60)
         assert len(stuck_job_ids) == 3
-        
+
         # Auto-fail should update all 3
         failed_count = await auto_fail_stuck_jobs(test_db, timeout_minutes=60)
         assert failed_count == 3

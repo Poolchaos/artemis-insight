@@ -8,9 +8,22 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timezone
 from bson import ObjectId
 from openai import APITimeoutError, RateLimitError, APIError
+import httpx
 
 from app.services.processing_engine import ProcessingEngine
 from app.models.template import TemplateSection, ProcessingStrategy, TemplateInDB
+
+
+def create_rate_limit_error():
+    """Create a properly formatted RateLimitError."""
+    response = httpx.Response(429, request=httpx.Request("POST", "https://api.openai.com"))
+    return RateLimitError("Rate limit exceeded", response=response, body={"error": {"message": "Rate limit"}})
+
+
+def create_api_error():
+    """Create a properly formatted APIError."""
+    request = httpx.Request("POST", "https://api.openai.com")
+    return APIError("Internal server error", request=request, body={"error": {"message": "Internal error"}})
 
 
 @pytest.fixture
@@ -182,7 +195,7 @@ class TestOpenAIRetryLogic:
 
         processing_engine.openai_client.chat.completions.create = AsyncMock(
             side_effect=[
-                RateLimitError("Rate limit exceeded"),
+                create_rate_limit_error(),
                 mock_response
             ]
         )
@@ -211,7 +224,7 @@ class TestOpenAIRetryLogic:
 
         processing_engine.openai_client.chat.completions.create = AsyncMock(
             side_effect=[
-                APIError("Internal server error"),
+                create_api_error(),
                 mock_response
             ]
         )
@@ -258,7 +271,7 @@ class TestOpenAIRetryLogic:
         """Test that max retries are enforced for rate limit errors."""
         # Mock OpenAI to always hit rate limit
         processing_engine.openai_client.chat.completions.create = AsyncMock(
-            side_effect=RateLimitError("Persistent rate limit")
+            side_effect=create_rate_limit_error()
         )
 
         # Execute synthesis and expect exception
@@ -298,7 +311,7 @@ class TestExponentialBackoff:
 
         # Track sleep calls
         sleep_calls = []
-        
+
         async def mock_sleep(duration):
             sleep_calls.append(duration)
 
@@ -327,14 +340,14 @@ class TestExponentialBackoff:
 
         processing_engine.openai_client.chat.completions.create = AsyncMock(
             side_effect=[
-                RateLimitError("Rate limit"),
+                create_rate_limit_error(),
                 mock_response
             ]
         )
 
         # Track sleep calls
         sleep_calls = []
-        
+
         async def mock_sleep(duration):
             sleep_calls.append(duration)
 
@@ -358,7 +371,7 @@ class TestTimeoutHandling:
         """Test that OpenAI client is initialized with timeout."""
         with patch('app.services.processing_engine.AsyncOpenAI') as mock_openai:
             engine = ProcessingEngine(mock_db)
-            
+
             # Verify AsyncOpenAI was called with timeout parameter
             mock_openai.assert_called_once()
             call_kwargs = mock_openai.call_args[1]
@@ -418,7 +431,7 @@ class TestErrorMessages:
     ):
         """Test user-friendly rate limit error message."""
         processing_engine.openai_client.chat.completions.create = AsyncMock(
-            side_effect=RateLimitError("Rate limit")
+            side_effect=create_rate_limit_error()
         )
 
         with patch('asyncio.sleep', new_callable=AsyncMock):

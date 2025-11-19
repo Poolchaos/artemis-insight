@@ -29,7 +29,7 @@ async def setup_retry_test_data(test_db, test_user):
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
     })
-    
+
     # Create a template
     template_id = ObjectId()
     await test_db.templates.insert_one({
@@ -58,7 +58,7 @@ async def setup_retry_test_data(test_db, test_user):
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
     })
-    
+
     # Create a failed job
     job_id = ObjectId()
     await test_db.jobs.insert_one({
@@ -75,7 +75,7 @@ async def setup_retry_test_data(test_db, test_user):
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
     })
-    
+
     # Create a failed summary
     summary_id = ObjectId()
     await test_db.summaries.insert_one({
@@ -93,7 +93,7 @@ async def setup_retry_test_data(test_db, test_user):
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow()
     })
-    
+
     return {
         "document_id": document_id,
         "template_id": template_id,
@@ -111,28 +111,28 @@ class TestSummaryRetryEndpoint:
     ):
         """Test successful retry of a failed summary."""
         summary_id = setup_retry_test_data["summary_id"]
-        
+
         # Mock Celery task
         with patch('app.routes.summaries.generate_summary_task') as mock_task:
             mock_task.apply_async.return_value = MagicMock(id="celery-task-123")
-            
+
             # Make retry request
             response = await client.post(
                 f"/api/summaries/{summary_id}/retry",
                 headers={"Authorization": f"Bearer {access_token}"}
             )
-        
+
         # Verify response
         assert response.status_code == 202
         data = response.json()
         assert "job_id" in data
         assert data["status"] == "pending"
         assert "Poll GET /api/jobs/" in data["message"]
-        
+
         # Verify old summary was deleted
         old_summary = await test_db.summaries.find_one({"_id": summary_id})
         assert old_summary is None
-        
+
         # Verify new job was created
         new_job_id = ObjectId(data["job_id"])
         new_job = await test_db.jobs.find_one({"_id": new_job_id})
@@ -141,7 +141,7 @@ class TestSummaryRetryEndpoint:
         assert new_job["job_type"] == "summarize"
         assert new_job["document_id"] == setup_retry_test_data["document_id"]
         assert new_job["template_id"] == setup_retry_test_data["template_id"]
-        
+
         # Verify Celery task was started
         mock_task.apply_async.assert_called_once()
 
@@ -149,12 +149,12 @@ class TestSummaryRetryEndpoint:
     async def test_retry_nonexistent_summary(self, client, access_token):
         """Test retry with invalid summary ID."""
         fake_id = str(ObjectId())
-        
+
         response = await client.post(
             f"/api/summaries/{fake_id}/retry",
             headers={"Authorization": f"Bearer {access_token}"}
         )
-        
+
         assert response.status_code == 404
         assert "not found" in response.json()["detail"].lower()
 
@@ -196,12 +196,12 @@ class TestSummaryRetryEndpoint:
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow()
         })
-        
+
         response = await client.post(
             f"/api/summaries/{completed_summary_id}/retry",
             headers={"Authorization": f"Bearer {access_token}"}
         )
-        
+
         assert response.status_code == 400
         assert "Can only retry failed summaries" in response.json()["detail"]
 
@@ -225,12 +225,12 @@ class TestSummaryRetryEndpoint:
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow()
         })
-        
+
         response = await client.post(
             f"/api/summaries/{processing_summary_id}/retry",
             headers={"Authorization": f"Bearer {access_token}"}
         )
-        
+
         assert response.status_code == 400
         assert "Can only retry failed summaries" in response.json()["detail"]
 
@@ -240,15 +240,15 @@ class TestSummaryRetryEndpoint:
     ):
         """Test retry fails when original document is deleted."""
         summary_id = setup_retry_test_data["summary_id"]
-        
+
         # Delete the document
         await test_db.documents.delete_one({"_id": setup_retry_test_data["document_id"]})
-        
+
         response = await client.post(
             f"/api/summaries/{summary_id}/retry",
             headers={"Authorization": f"Bearer {access_token}"}
         )
-        
+
         assert response.status_code == 404
         assert "document not found" in response.json()["detail"].lower()
 
@@ -258,18 +258,18 @@ class TestSummaryRetryEndpoint:
     ):
         """Test retry fails when document is still processing."""
         summary_id = setup_retry_test_data["summary_id"]
-        
+
         # Update document status to processing
         await test_db.documents.update_one(
             {"_id": setup_retry_test_data["document_id"]},
             {"$set": {"status": DocumentStatus.PROCESSING}}
         )
-        
+
         response = await client.post(
             f"/api/summaries/{summary_id}/retry",
             headers={"Authorization": f"Bearer {access_token}"}
         )
-        
+
         assert response.status_code == 400
         assert "must be 'completed'" in response.json()["detail"].lower()
 
@@ -279,15 +279,15 @@ class TestSummaryRetryEndpoint:
     ):
         """Test retry fails when original template is deleted."""
         summary_id = setup_retry_test_data["summary_id"]
-        
+
         # Delete the template
         await test_db.templates.delete_one({"_id": setup_retry_test_data["template_id"]})
-        
+
         response = await client.post(
             f"/api/summaries/{summary_id}/retry",
             headers={"Authorization": f"Bearer {access_token}"}
         )
-        
+
         assert response.status_code == 404
         assert "template not found" in response.json()["detail"].lower()
 
@@ -295,9 +295,9 @@ class TestSummaryRetryEndpoint:
     async def test_retry_without_auth_fails(self, client, setup_retry_test_data):
         """Test retry without authentication fails."""
         summary_id = setup_retry_test_data["summary_id"]
-        
+
         response = await client.post(f"/api/summaries/{summary_id}/retry")
-        
+
         assert response.status_code == 401
 
     @pytest.mark.asyncio
@@ -309,7 +309,7 @@ class TestSummaryRetryEndpoint:
         from app.services.user_service import UserService
         from app.models.user import UserCreate
         from app.utils.auth import create_access_token
-        
+
         user_service = UserService(test_db)
         other_user = await user_service.create_user(UserCreate(
             email="other@example.com",
@@ -317,14 +317,14 @@ class TestSummaryRetryEndpoint:
             password="password123"
         ))
         other_token = create_access_token(str(other_user.id))
-        
+
         summary_id = setup_retry_test_data["summary_id"]
-        
+
         response = await client.post(
             f"/api/summaries/{summary_id}/retry",
             headers={"Authorization": f"Bearer {other_token}"}
         )
-        
+
         assert response.status_code == 404  # Not found (filtered by user_id)
 
     @pytest.mark.asyncio
@@ -334,7 +334,7 @@ class TestSummaryRetryEndpoint:
             "/api/summaries/invalid-id/retry",
             headers={"Authorization": f"Bearer {access_token}"}
         )
-        
+
         assert response.status_code == 400
         assert "Invalid summary_id format" in response.json()["detail"]
 
@@ -361,12 +361,12 @@ class TestCleanupStuckJobsEndpoint:
             "updated_at": datetime.utcnow() - timedelta(hours=2),
             "started_at": datetime.utcnow() - timedelta(hours=2)
         })
-        
+
         response = await client.post(
             "/api/jobs/cleanup-stuck",
             headers={"Authorization": f"Bearer {access_token}"}
         )
-        
+
         assert response.status_code == 200
         data = response.json()
         assert "failed_count" in data
@@ -376,5 +376,5 @@ class TestCleanupStuckJobsEndpoint:
     async def test_cleanup_without_auth_fails(self, client):
         """Test cleanup without authentication fails."""
         response = await client.post("/api/jobs/cleanup-stuck")
-        
+
         assert response.status_code == 401

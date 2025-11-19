@@ -3,13 +3,18 @@ PDF processing service for text extraction and semantic chunking.
 
 Extracts text from PDF files with metadata preservation and creates semantic
 chunks suitable for embedding generation and semantic search.
+
+Optimized for memory efficiency and speed using PyMuPDF (fitz).
 """
 
 import re
+import logging
 from typing import List, Dict, Any, Optional, Tuple
 from pathlib import Path
-import pdfplumber
+import fitz  # PyMuPDF - much faster than pdfplumber
 from io import BytesIO
+
+logger = logging.getLogger(__name__)
 
 
 class DocumentChunk:
@@ -73,7 +78,7 @@ class PDFProcessor:
         file_bytes: bytes = None
     ) -> Dict[str, Any]:
         """
-        Extract text from PDF with page-level metadata.
+        Extract text from PDF with page-level metadata using PyMuPDF (much faster).
 
         Args:
             file_path: Path to PDF file
@@ -91,23 +96,30 @@ class PDFProcessor:
         pages_data = []
         full_text = []
 
-        # Open PDF from path or bytes
-        if file_bytes:
-            pdf_file = BytesIO(file_bytes)
-            pdf = pdfplumber.open(pdf_file)
-        else:
-            pdf = pdfplumber.open(file_path)
-
         try:
-            for page_num, page in enumerate(pdf.pages, start=1):
-                text = page.extract_text()
+            # Open PDF from path or bytes using PyMuPDF (fitz)
+            if file_bytes:
+                pdf_doc = fitz.open(stream=file_bytes, filetype="pdf")
+            else:
+                pdf_doc = fitz.open(file_path)
+
+            total_pages = pdf_doc.page_count
+            logger.info(f"Processing PDF with {total_pages} pages")
+
+            # Process pages with progress logging
+            for page_num in range(total_pages):
+                if page_num % 10 == 0 and page_num > 0:
+                    logger.info(f"Extracted text from {page_num}/{total_pages} pages")
+                
+                page = pdf_doc[page_num]
+                text = page.get_text("text")  # Fast text extraction
 
                 if text:
                     # Clean up text
                     text = self._clean_text(text)
 
                     pages_data.append({
-                        "page_number": page_num,
+                        "page_number": page_num + 1,  # 1-indexed
                         "text": text,
                         "char_count": len(text),
                         "word_count": len(text.split())
@@ -116,6 +128,8 @@ class PDFProcessor:
                     full_text.append(text)
 
             complete_text = "\n\n".join(full_text)
+
+            logger.info(f"Extraction complete: {len(complete_text.split())} words from {total_pages} pages")
 
             return {
                 "full_text": complete_text,
@@ -126,7 +140,8 @@ class PDFProcessor:
             }
 
         finally:
-            pdf.close()
+            if 'pdf_doc' in locals():
+                pdf_doc.close()
 
     def _clean_text(self, text: str) -> str:
         """
@@ -198,7 +213,7 @@ class PDFProcessor:
         extracted_data: Dict[str, Any]
     ) -> List[DocumentChunk]:
         """
-        Create semantic chunks from extracted PDF data.
+        Create semantic chunks from extracted PDF data (memory-optimized).
 
         Uses a sliding window approach with overlap to ensure context preservation.
         Attempts to split at sentence boundaries when possible.
@@ -213,12 +228,17 @@ class PDFProcessor:
         pages_data = extracted_data["pages"]
         total_pages = extracted_data["total_pages"]
 
-        # Detect headings for context
+        logger.info(f"Creating chunks from {len(full_text)} characters")
+
+        # Detect headings for context (but don't store all in memory)
         headings = self.detect_headings(full_text)
+        logger.info(f"Detected {len(headings)} headings")
 
         # Split into words for accurate tracking
         all_words = full_text.split()
         total_words = len(all_words)
+        
+        logger.info(f"Processing {total_words} words into {self.chunk_size}-word chunks")
 
         # Build page position map (character-based)
         page_positions = self._build_page_positions(pages_data)
@@ -226,6 +246,9 @@ class PDFProcessor:
         chunks = []
         chunk_index = 0
         word_index = 0
+
+        # Log progress every N chunks
+        log_interval = max(10, total_words // (self.chunk_size * 20))  # Log ~20 times
 
         while word_index < total_words:
             # Collect words for this chunk
@@ -263,12 +286,17 @@ class PDFProcessor:
             chunks.append(chunk)
             chunk_index += 1
 
+            # Log progress
+            if chunk_index % log_interval == 0:
+                logger.info(f"Created {chunk_index} chunks ({word_index}/{total_words} words processed)")
+
             # Move to next chunk with overlap
             if self.overlap > 0 and word_index + self.chunk_size < total_words:
                 word_index += self.chunk_size - self.overlap
             else:
                 word_index += self.chunk_size
 
+        logger.info(f"Chunking complete: {len(chunks)} chunks created")
         return chunks
 
     def _split_into_sentences(self, text: str) -> List[str]:

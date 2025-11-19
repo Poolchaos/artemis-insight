@@ -21,6 +21,7 @@ celery[redis]==5.4.0
 redis==5.2.0
 
 # PDF processing
+PyMuPDF==1.24.14  # Much faster than pdfplumber for large PDFs
 pdfplumber==0.11.4
 PyPDF2==3.0.1
 reportlab==4.2.5

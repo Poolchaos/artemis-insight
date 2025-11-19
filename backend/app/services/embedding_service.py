@@ -144,11 +144,17 @@ class EmbeddingService:
 
         batch_size = batch_size or self.batch_size
         embedding_ids = []
+        total_chunks = len(chunks)
+        total_batches = (total_chunks + batch_size - 1) // batch_size
+
+        logger.info(f"Generating embeddings for {total_chunks} chunks in {total_batches} batches")
 
         # Process chunks in batches
-        for i in range(0, len(chunks), batch_size):
+        for batch_num, i in enumerate(range(0, len(chunks), batch_size), 1):
             batch = chunks[i:i + batch_size]
             batch_texts = [chunk.text for chunk in batch]
+
+            logger.info(f"Processing batch {batch_num}/{total_batches} ({len(batch)} chunks)")
 
             # Generate embeddings for batch
             embeddings = await self.generate_embeddings_batch(batch_texts)
@@ -173,7 +179,10 @@ class EmbeddingService:
             # Batch insert to database
             result = await self.collection.insert_many(embedding_docs)
             embedding_ids.extend([str(oid) for oid in result.inserted_ids])
+            
+            logger.info(f"Batch {batch_num}/{total_batches} completed: {len(result.inserted_ids)} embeddings saved")
 
+        logger.info(f"All embeddings generated: {len(embedding_ids)} total")
         return embedding_ids
 
     async def search_similar_chunks(

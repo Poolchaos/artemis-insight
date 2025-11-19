@@ -231,8 +231,15 @@ pipeline {
                         cat deployment-state.log || echo "No state log available"
                     '''
 
+                    // Use milestone to avoid blocking executor
+                    milestone(ordinal: 1, label: 'Pre-Deploy Approval')
+
                     // Manual approval
-                    input message: '≡ƒÜÇ Deploy Artemis Insight API to Production?', ok: 'Deploy Now'
+                    timeout(time: 30, unit: 'MINUTES') {
+                        input message: '≡ƒÜÇ Deploy Artemis Insight API to Production?', ok: 'Deploy Now'
+                    }
+
+                    milestone(ordinal: 2, label: 'Post-Deploy Approval')
 
                     echo "Γ£à Deployment approved - proceeding with deployment"
                 }
@@ -503,16 +510,63 @@ pipeline {
                             echo '=== API Logs (last 20 lines) ==='
                             docker logs --tail 20 artemis-insight-backend
 
-                            echo '=== Health Check ==='
-                            sleep 5
-                            curl -f http://localhost:8002/health || echo 'Health check failed'
+                            echo '=== Health Check with Retry ==='
+                            # Retry health check up to 30 times (30 seconds)
+                            for i in \$(seq 1 30); do
+                                echo \"Attempt \$i/30...\"
+                                if curl -f http://localhost:8002/health; then
+                                    echo 'Γ£à Health check passed!'
+                                    break
+                                fi
+                                if [ \$i -eq 30 ]; then
+                                    echo 'Γ¥î Health check failed after 30 attempts'
+                                    docker logs --tail 50 artemis-insight-backend
+                                    exit 1
+                                fi
+                                sleep 1
+                            done
+
+                            echo '=== Smoke Tests ==='
+                            # Test critical endpoints
+                            curl -f http://localhost:8002/docs || echo 'WARNING: Docs endpoint failed'
 
                             echo '=== Worker Status ==='
                             docker logs --tail 10 artemis-insight-celery-worker
+
+                            echo 'Γ£à All post-deployment checks passed'
                         "
                     '''
 
                     echo "Γ£à Post-deploy verification completed"
+                }
+            }
+        }
+
+        stage('Rollback on Failure') {
+            when {
+                expression { currentBuild.result == 'FAILURE' }
+            }
+            steps {
+                script {
+                    echo "≡ƒÜÖ === ROLLBACK TRIGGERED ==="
+                    sh '''
+                        echo "≡ƒöÅ Rolling back to previous image..."
+                        ssh -o StrictHostKeyChecking=no ${PROD_SERVER} "
+                            # Stop failed container
+                            docker stop artemis-insight-backend 2>/dev/null || true
+                            docker rm artemis-insight-backend 2>/dev/null || true
+
+                            # Restart with 'latest' tag (previous working version)
+                            docker pull ${GHCR_URL}/${IMAGE_NAME}:latest
+                            docker run -d --name artemis-insight-backend \\
+                                -p 127.0.0.1:8002:8000 \\
+                                --restart unless-stopped \\
+                                --network artemis-insight-net \\
+                                ${GHCR_URL}/${IMAGE_NAME}:latest
+
+                            echo 'Γ£à Rollback complete - service restored'
+                        " || echo "Γ¥î Rollback failed - manual intervention required"
+                    '''
                 }
             }
         }
@@ -522,6 +576,9 @@ pipeline {
         always {
             script {
                 echo "≡ƒº╣ === POST-BUILD CLEANUP ==="
+
+                // Archive deployment state
+                archiveArtifacts artifacts: 'deployment-state.log', allowEmptyArchive: true
 
                 // Release build lock
                 sh '''
@@ -549,6 +606,7 @@ pipeline {
                 echo "≡ƒÄë === BUILD SUCCESS ==="
                 echo "Γ£à Artemis Insight API deployed successfully"
                 echo "≡ƒôï Image: ${env.FULL_IMAGE_NAME}"
+                echo "≡ƒöê Build duration: ${currentBuild.durationString}"
             }
         }
         failure {
@@ -556,6 +614,16 @@ pipeline {
                 echo "≡ƒÆÑ === BUILD FAILED ==="
                 echo "Γ¥î Artemis Insight API build or deployment failed"
                 echo "≡ƒöì Check logs for details"
+
+                // Send notification (if you have email/Slack configured)
+                // emailext subject: "Artemis Insight API Deploy Failed",
+                //          body: "Build ${env.BUILD_NUMBER} failed. Check ${env.BUILD_URL}"
+            }
+        }
+        unstable {
+            script {
+                echo "ΓÜá∩╕Å === BUILD UNSTABLE ==="
+                echo "Γ¥î Tests passed but health checks may have warnings"
             }
         }
     }

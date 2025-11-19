@@ -11,6 +11,7 @@ pipeline {
     options {
         skipDefaultCheckout(true)
         disableConcurrentBuilds()
+        lock(resource: 'artemis-insight-deployment', skipIfLocked: false)  // Global lock across all pipelines
         timeout(time: 60, unit: 'MINUTES')
     }
 

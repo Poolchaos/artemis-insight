@@ -266,7 +266,7 @@ export default function SummaryViewPage() {
                   <>
                     <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
                     Export
-                  </>)
+                  </>
                 )}
               </Button>
               {showExportMenu && !isExporting && (
@@ -288,7 +288,8 @@ export default function SummaryViewPage() {
                 </button>
               </div>
             )}
-          </div>
+            </div>
+          )}
           <Button
             variant="outline"
             onClick={handleDeleteClick}

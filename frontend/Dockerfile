@@ -28,8 +28,9 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copy built files from builder stage
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Create non-root user for security
-RUN addgroup -g 1000 appuser && \
+# Install netcat for health checks
+RUN apk add --no-cache netcat-openbsd && \
+    addgroup -g 1000 appuser && \
     adduser -D -u 1000 -G appuser appuser && \
     chown -R appuser:appuser /usr/share/nginx/html && \
     chown -R appuser:appuser /var/cache/nginx && \
@@ -43,9 +44,9 @@ USER appuser
 # Expose port
 EXPOSE 80
 
-# Health check
+# Health check - test if nginx is responding
 HEALTHCHECK --interval=30s --timeout=10s --start-period=20s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:80/ || exit 1
+    CMD nc -z localhost 80 || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]

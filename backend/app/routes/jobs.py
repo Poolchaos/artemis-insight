@@ -3,10 +3,12 @@ Job status and management routes.
 """
 
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
 from datetime import datetime
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.database import get_db
 from app.models.user import UserInDB
@@ -14,12 +16,14 @@ from app.models.job import JobResponse, JobStatus, JobType
 from app.middleware.auth import get_current_user
 from app.utils.task_monitor import auto_fail_stuck_jobs
 
-
+limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
 
 @router.get("/{job_id}", response_model=JobResponse)
+@limiter.limit("30/minute")  # Limit job status polling to prevent API overload
 async def get_job_status(
+    request: Request,
     job_id: str,
     current_user: UserInDB = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_db)
@@ -28,6 +32,7 @@ async def get_job_status(
     Get job status and progress.
 
     Poll this endpoint to track the progress of async summarization jobs.
+    Rate limited to 30 requests/minute to prevent server overload.
 
     Returns:
     - **status**: Job status (pending, running, completed, failed, cancelled)

@@ -2,15 +2,23 @@
 FastAPI application initialization and configuration.
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+import time
 
 from app.config import settings
 from app.database import db_manager, get_db
 from app.routes import auth, documents, templates, summaries, jobs, batch
 from app.services.template_service import TemplateService
 from bson import ObjectId
+
+# Rate limiter to prevent API overload
+limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 
 
 @asynccontextmanager
@@ -49,6 +57,27 @@ def create_application() -> FastAPI:
         redoc_url="/redoc" if settings.debug else None,
         lifespan=lifespan
     )
+
+    # Add rate limiter
+    application.state.limiter = limiter
+    application.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+    # Request timeout middleware to prevent hanging connections
+    @application.middleware("http")
+    async def timeout_middleware(request: Request, call_next):
+        start_time = time.time()
+        try:
+            response = await call_next(request)
+            process_time = time.time() - start_time
+            response.headers["X-Process-Time"] = str(process_time)
+            return response
+        except Exception as e:
+            # Log and return 503 on errors to help with circuit breakers
+            print(f"Request error: {e}")
+            return JSONResponse(
+                status_code=503,
+                content={"detail": "Service temporarily unavailable"}
+            )
 
     # CORS middleware
     application.add_middleware(

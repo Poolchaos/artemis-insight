@@ -41,6 +41,10 @@ export const jobService = {
     timeout: number = 600000 // 10 minutes default (increased from 5)
   ): Promise<Job> {
     const startTime = Date.now();
+    let consecutiveErrors = 0;
+    const maxConsecutiveErrors = 3;
+    let currentInterval = pollInterval;
+    const maxInterval = 30000; // Max 30 seconds between polls
 
     return new Promise((resolve, reject) => {
       const poll = async () => {
@@ -53,6 +57,9 @@ export const jobService = {
 
           // Get job status
           const job = await this.getJob(jobId);
+
+          // Reset error counter on success
+          consecutiveErrors = 0;
 
           // Notify progress callback
           if (onProgress) {
@@ -75,10 +82,27 @@ export const jobService = {
             return;
           }
 
+          // Exponential backoff for long-running jobs
+          // After 2 minutes, slow down polling to reduce server load
+          const elapsed = Date.now() - startTime;
+          if (elapsed > 120000) { // 2 minutes
+            currentInterval = Math.min(currentInterval * 1.5, maxInterval);
+          }
+
           // Continue polling
-          setTimeout(poll, pollInterval);
+          setTimeout(poll, currentInterval);
         } catch (error) {
-          reject(error);
+          consecutiveErrors++;
+
+          // Circuit breaker: stop polling after too many errors
+          if (consecutiveErrors >= maxConsecutiveErrors) {
+            reject(new Error('Too many polling errors. Server may be overloaded. Please try again later.'));
+            return;
+          }
+
+          // Exponential backoff on errors
+          const errorBackoff = Math.min(pollInterval * Math.pow(2, consecutiveErrors), maxInterval);
+          setTimeout(poll, errorBackoff);
         }
       };
 

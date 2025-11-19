@@ -33,3 +33,11 @@ celery_app.conf.update(
     task_send_sent_event=True,  # Track task events for monitoring
     worker_send_task_events=True,  # Enable task event monitoring
 )
+
+# Celery Beat Schedule - periodic tasks
+celery_app.conf.beat_schedule = {
+    'cleanup-stuck-jobs-every-5-minutes': {
+        'task': 'app.tasks.cleanup_stuck_jobs_task',
+        'schedule': 300.0,  # Run every 5 minutes
+    },
+}

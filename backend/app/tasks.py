@@ -656,3 +656,55 @@ def regenerate_section_task(
     finally:
         # Always close the MongoDB client
         client.close()
+
+
+@celery_app.task(bind=True, name="app.tasks.cleanup_stuck_jobs_task")
+def cleanup_stuck_jobs_task(self) -> Dict[str, Any]:
+    """
+    Periodic task to detect and auto-fail stuck jobs.
+    
+    Runs every 5 minutes to check for jobs stuck in PENDING or RUNNING
+    state for more than 60 minutes without progress.
+    
+    Returns:
+        Dict with cleanup results
+    """
+    logger.info("Starting stuck job cleanup task")
+    
+    try:
+        # Get async loop
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    
+    async def _cleanup():
+        from app.config import settings
+        from app.utils.task_monitor import auto_fail_stuck_jobs
+        
+        # Create MongoDB client
+        client = AsyncIOMotorClient(settings.mongo_uri)
+        db = client.get_default_database()
+        
+        try:
+            # Auto-fail jobs stuck for more than 60 minutes
+            failed_count = await auto_fail_stuck_jobs(db, timeout_minutes=60)
+            
+            if failed_count > 0:
+                logger.warning(f"Auto-failed {failed_count} stuck job(s)")
+            else:
+                logger.debug("No stuck jobs found")
+            
+            return {
+                "status": "success",
+                "failed_count": failed_count,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        finally:
+            client.close()
+    
+    # Run the async cleanup
+    result = loop.run_until_complete(_cleanup())
+    
+    logger.info(f"Stuck job cleanup completed: {result}")
+    return result

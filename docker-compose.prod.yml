@@ -201,6 +201,43 @@ services:
         reservations:
           memory: 1G
 
+  # Celery Beat (Scheduler for periodic tasks)
+  celery_beat:
+    image: ${API_IMAGE:-ghcr.io/poolchaos/artemis-insight-backend:latest}
+    container_name: artemis-insight-celery-beat
+    restart: unless-stopped
+    command: celery -A app.celery_app beat --loglevel=info
+    environment:
+      # Application
+      - APP_NAME=${APP_NAME:-Artemis Insight}
+      - APP_ENV=production
+
+      # MongoDB
+      - MONGO_URI=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@artemis-insight-mongodb:27017/${MONGO_DATABASE}?authSource=admin
+
+      # Redis/Celery
+      - REDIS_URL=redis://artemis-insight-redis:6379/0
+      - CELERY_BROKER_URL=redis://artemis-insight-redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://artemis-insight-redis:6379/0
+
+      # JWT
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+
+      # OpenAI
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+
+    networks:
+      - artemis-insight-net
+    depends_on:
+      - mongodb
+      - redis
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
   # Frontend (React + NGINX)
   frontend:
     image: ${WEB_IMAGE:-ghcr.io/poolchaos/artemis-insight-frontend:latest}

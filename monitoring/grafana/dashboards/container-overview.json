@@ -1,0 +1,218 @@
+{
+  "title": "Container Overview - All Services",
+  "tags": ["docker", "overview"],
+  "timezone": "browser",
+  "schemaVersion": 16,
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+      {
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "id": 1,
+        "title": "CPU Usage by Container",
+        "type": "graph",
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "targets": [
+          {
+            "expr": "rate(container_cpu_usage_seconds_total{name=~\".+\"}[5m]) * 100",
+            "legendFormat": "{{name}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percent",
+            "label": "CPU %",
+            "show": true
+          },
+          {
+            "format": "short",
+            "show": false
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "grid": {
+          "threshold1": null,
+          "threshold2": null
+        }
+      },
+      {
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        },
+        "id": 2,
+        "title": "Memory Usage by Container",
+        "type": "graph",
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "targets": [
+          {
+            "expr": "container_memory_usage_bytes{name=~\".+\"}",
+            "legendFormat": "{{name}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "bytes",
+            "label": "Memory",
+            "show": true
+          },
+          {
+            "format": "short",
+            "show": false
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "grid": {
+          "threshold1": null,
+          "threshold2": null
+        }
+      },
+      {
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        },
+        "id": 3,
+        "title": "Network I/O",
+        "type": "graph",
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "targets": [
+          {
+            "expr": "rate(container_network_receive_bytes_total{name=~\".+\"}[5m])",
+            "legendFormat": "{{name}} RX",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(container_network_transmit_bytes_total{name=~\".+\"}[5m])",
+            "legendFormat": "{{name}} TX",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "Bps",
+            "label": "Network",
+            "show": true
+          },
+          {
+            "format": "short",
+            "show": false
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "grid": {
+          "threshold1": null,
+          "threshold2": null
+        }
+      },
+      {
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 8
+        },
+        "id": 4,
+        "title": "Disk I/O",
+        "type": "graph",
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "targets": [
+          {
+            "expr": "rate(container_fs_reads_bytes_total{name=~\".+\"}[5m])",
+            "legendFormat": "{{name}} Read",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(container_fs_writes_bytes_total{name=~\".+\"}[5m])",
+            "legendFormat": "{{name}} Write",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "Bps",
+            "label": "Disk I/O",
+            "show": true
+          },
+          {
+            "format": "short",
+            "show": false
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "grid": {
+          "threshold1": null,
+          "threshold2": null
+        }
+      },
+      {
+        "gridPos": {
+          "h": 6,
+          "w": 24,
+          "x": 0,
+          "y": 16
+        },
+        "id": 5,
+        "title": "Container Status",
+        "type": "table",
+        "targets": [
+          {
+            "expr": "container_last_seen{name=~\".+\"}",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "__name__": true
+              },
+              "renameByName": {
+                "name": "Container",
+                "image": "Image",
+                "Value": "Last Seen"
+              }
+            }
+          }
+        ]
+      }
+    ]
+}

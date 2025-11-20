@@ -1,0 +1,385 @@
+{
+  "title": "Artemis Insight - Application Metrics",
+  "tags": ["artemis", "application"],
+  "timezone": "browser",
+  "schemaVersion": 16,
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+      {
+        "gridPos": {
+          "h": 2,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "id": 1,
+        "title": "Service Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "container_last_seen{name=~\"artemis-insight.*\"}",
+            "legendFormat": "{{name}}",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "textMode": "name"
+        }
+      },
+      {
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 2
+        },
+        "id": 2,
+        "title": "Backend API - CPU Usage",
+        "type": "graph",
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "targets": [
+          {
+            "expr": "rate(container_cpu_usage_seconds_total{name=\"artemis-insight-backend\"}[5m]) * 100",
+            "legendFormat": "CPU %",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percent",
+            "label": "CPU %",
+            "max": 100,
+            "show": true
+          },
+          {
+            "format": "short",
+            "show": false
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "grid": {
+          "threshold1": null,
+          "threshold2": null
+        },
+        "alert": {
+          "name": "Backend CPU High",
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [80],
+                "type": "gt"
+              },
+              "operator": {
+                "type": "and"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              },
+              "reducer": {
+                "params": [],
+                "type": "avg"
+              },
+              "type": "query"
+            }
+          ]
+        }
+      },
+      {
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 2
+        },
+        "id": 3,
+        "title": "Backend API - Memory Usage",
+        "type": "graph",
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "targets": [
+          {
+            "expr": "container_memory_usage_bytes{name=\"artemis-insight-backend\"}",
+            "legendFormat": "Used",
+            "refId": "A"
+          },
+          {
+            "expr": "container_spec_memory_limit_bytes{name=\"artemis-insight-backend\"}",
+            "legendFormat": "Limit",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "bytes",
+            "label": "Memory",
+            "show": true
+          },
+          {
+            "format": "short",
+            "show": false
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "grid": {
+          "threshold1": null,
+          "threshold2": null
+        },
+        "alert": {
+          "name": "Backend Memory High",
+          "conditions": [
+            {
+              "evaluator": {
+                "params": [900000000],
+                "type": "gt"
+              },
+              "query": {
+                "params": ["A", "5m", "now"]
+              },
+              "reducer": {
+                "type": "avg"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 10
+        },
+        "id": 4,
+        "title": "Celery Worker - CPU Usage",
+        "type": "graph",
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "targets": [
+          {
+            "expr": "rate(container_cpu_usage_seconds_total{name=\"artemis-insight-celery-worker\"}[5m]) * 100",
+            "legendFormat": "CPU %",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percent",
+            "label": "CPU %",
+            "show": true
+          },
+          {
+            "format": "short",
+            "show": false
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "grid": {
+          "threshold1": null,
+          "threshold2": null
+        }
+      },
+      {
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 10
+        },
+        "id": 5,
+        "title": "Celery Worker - Memory Usage",
+        "type": "graph",
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "targets": [
+          {
+            "expr": "container_memory_usage_bytes{name=\"artemis-insight-celery-worker\"}",
+            "legendFormat": "Used",
+            "refId": "A"
+          },
+          {
+            "expr": "container_spec_memory_limit_bytes{name=\"artemis-insight-celery-worker\"}",
+            "legendFormat": "Limit",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "bytes",
+            "label": "Memory",
+            "show": true
+          },
+          {
+            "format": "short",
+            "show": false
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "grid": {
+          "threshold1": null,
+          "threshold2": null
+        }
+      },
+      {
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 18
+        },
+        "id": 6,
+        "title": "MongoDB - CPU & Memory",
+        "type": "graph",
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "targets": [
+          {
+            "expr": "rate(container_cpu_usage_seconds_total{name=\"artemis-insight-mongodb\"}[5m]) * 100",
+            "legendFormat": "CPU %",
+            "refId": "A"
+          },
+          {
+            "expr": "container_memory_usage_bytes{name=\"artemis-insight-mongodb\"} / 1024 / 1024",
+            "legendFormat": "Memory (MB)",
+            "refId": "B",
+            "yAxisIndex": 1
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percent",
+            "label": "CPU %",
+            "show": true
+          },
+          {
+            "format": "short",
+            "label": "Memory (MB)",
+            "show": true
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "grid": {
+          "threshold1": null,
+          "threshold2": null
+        }
+      },
+      {
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 18
+        },
+        "id": 7,
+        "title": "Redis - Operations",
+        "type": "graph",
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "targets": [
+          {
+            "expr": "rate(container_cpu_usage_seconds_total{name=\"artemis-insight-redis\"}[5m]) * 100",
+            "legendFormat": "CPU %",
+            "refId": "A"
+          },
+          {
+            "expr": "container_memory_usage_bytes{name=\"artemis-insight-redis\"} / 1024 / 1024",
+            "legendFormat": "Memory (MB)",
+            "refId": "B",
+            "yAxisIndex": 1
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "percent",
+            "label": "CPU %",
+            "show": true
+          },
+          {
+            "format": "short",
+            "label": "Memory (MB)",
+            "show": true
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "grid": {
+          "threshold1": null,
+          "threshold2": null
+        }
+      },
+      {
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 26
+        },
+        "id": 8,
+        "title": "Network Traffic - All Artemis Containers",
+        "type": "graph",
+        "lines": true,
+        "fill": 1,
+        "linewidth": 2,
+        "targets": [
+          {
+            "expr": "rate(container_network_receive_bytes_total{name=~\"artemis-insight.*\"}[5m])",
+            "legendFormat": "{{name}} RX",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(container_network_transmit_bytes_total{name=~\"artemis-insight.*\"}[5m])",
+            "legendFormat": "{{name}} TX",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "Bps",
+            "label": "Network",
+            "show": true
+          },
+          {
+            "format": "short",
+            "show": false
+          }
+        ],
+        "xaxis": {
+          "mode": "time",
+          "show": true
+        },
+        "grid": {
+          "threshold1": null,
+          "threshold2": null
+        }
+      }
+    ]
+}

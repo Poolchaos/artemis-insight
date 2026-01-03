@@ -1,46 +1,146 @@
-﻿Proprietary License
+﻿Artemis Insight - Source Available License
+=========================================
 
-Copyright (c) 2025 Phillip-Juan van der Berg
+Copyright (c) 2024-2026 Phillip-Juan van der Berg
+All Rights Reserved.
 
-All rights reserved.
 
-This software and associated documentation files (the "Software") are the exclusive 
-property of Phillip-Juan van der Berg. The source code is made available for viewing 
-purposes only.
+1. DEFINITIONS
+--------------
 
-RESTRICTIONS:
+"Software" means the Artemis Insight source code, documentation, and associated
+files contained in this repository.
 
-1. No person or entity may use, copy, modify, merge, publish, distribute, sublicense, 
-   sell, or otherwise exploit the Software or any portion thereof without explicit 
-   written permission from Phillip-Juan van der Berg.
+"Commercial Use" means any use of the Software intended for or directed toward
+commercial advantage or monetary compensation, including but not limited to:
+  - Using the Software in a commercial product or service
+  - Using the Software to provide paid services to third parties
+  - Deploying the Software in a commercial environment
+  - Incorporating the Software into proprietary products
 
-2. No person or entity may create derivative works based on the Software without 
-   explicit written permission from Phillip-Juan van der Berg.
+"Non-Commercial Use" means personal learning, academic research, evaluation,
+and non-profit educational purposes only.
 
-3. Viewing the source code does not grant any rights to use, reproduce, or distribute 
-   the Software.
 
-4. Commercial use of any kind is strictly prohibited without a separate commercial 
-   license agreement.
+2. GRANT OF RIGHTS (Non-Commercial Only)
+----------------------------------------
 
-5. Any use of this Software requires prior written authorization and may require 
-   payment of licensing fees as determined by Phillip-Juan van der Berg.
+Subject to the terms of this License, you are granted a limited, non-exclusive,
+non-transferable, revocable license to:
 
-PERMISSION REQUESTS:
+  a) View, read, and study the source code for educational purposes
+  b) Fork and modify the code for personal, non-commercial experimentation
+  c) Run the Software locally for evaluation and learning purposes
 
-To request permission to use this Software, please contact:
-- Repository: https://github.com/Poolchaos/artemis-insight
-- For licensing inquiries, please open an issue in the repository
+This grant explicitly DOES NOT include any rights to:
+  - Use the Software for Commercial Use
+  - Redistribute the Software or modifications thereof
+  - Sublicense the Software to third parties
+  - Remove or alter copyright notices or this license
 
-DISCLAIMER:
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
-INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
-PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
-HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION 
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
-SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+3. COMMERCIAL LICENSING
+-----------------------
 
-VIOLATION:
+Commercial Use of this Software requires a separate paid commercial license.
 
-Unauthorized use of this Software may result in legal action and claims for damages.
+To obtain a commercial license, contact:
+  - Email: phillipjuanvanderberg@gmail.com
+  - GitHub: https://github.com/Poolchaos/artemis-insight (open an issue)
+
+Commercial license options include:
+  - Single Organization License
+  - Enterprise License with support
+  - OEM/Reseller License
+  - Custom licensing arrangements
+
+
+4. RESTRICTIONS
+---------------
+
+You may NOT:
+
+  a) Use the Software for any Commercial Use without a paid license
+  b) Copy, modify, merge, publish, distribute, sublicense, or sell copies
+     of the Software without explicit written permission
+  c) Use the Software to compete with Artemis Insight or derivative products
+  d) Remove, alter, or obscure any copyright, trademark, or attribution
+     notices contained in the Software
+  e) Represent that you have any ownership rights in the Software
+  f) Use the Software in any manner that violates applicable laws
+
+
+5. INTELLECTUAL PROPERTY
+------------------------
+
+The Software, including all intellectual property rights therein, is and shall
+remain the exclusive property of Phillip-Juan van der Berg.
+
+This License does not grant you any rights to trademarks, service marks, trade
+names, or logos associated with the Software.
+
+
+6. CONTRIBUTIONS
+----------------
+
+By submitting contributions (code, documentation, or other materials) to this
+repository, you:
+
+  a) Grant the copyright holder a perpetual, worldwide, non-exclusive,
+     royalty-free license to use, modify, and distribute your contributions
+  b) Represent that you have the right to grant such license
+  c) Understand that your contributions may be incorporated into commercial
+     versions of the Software
+
+
+7. DISCLAIMER OF WARRANTIES
+---------------------------
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT.
+
+IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE,
+ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+
+8. TERMINATION
+--------------
+
+This License is effective until terminated. Your rights under this License
+will terminate automatically without notice if you fail to comply with any
+of its terms.
+
+Upon termination, you must:
+  - Cease all use of the Software
+  - Destroy all copies in your possession or control
+
+
+9. ENFORCEMENT
+--------------
+
+Unauthorized Commercial Use of this Software constitutes copyright infringement
+and may result in:
+  - Injunctive relief
+  - Actual damages and lost profits
+  - Statutory damages
+  - Recovery of attorney fees and costs
+
+The copyright holder actively monitors for license violations.
+
+
+10. GOVERNING LAW
+-----------------
+
+This License shall be governed by the laws of South Africa, without regard
+to its conflict of law provisions.
+
+
+11. CONTACT
+-----------
+
+Phillip-Juan van der Berg
+Email: phillipjuanvanderberg@gmail.com
+GitHub: https://github.com/Poolchaos

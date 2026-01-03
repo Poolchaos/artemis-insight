@@ -1,0 +1,73 @@
+# How I Built a Document Intelligence Platform in One Weekend
+
+Saturday morning, I faced a problem: I needed semantic search across PDF documents. I chose FastAPI for quick development, React + TypeScript for type safety, MongoDB for a flexible schema, Redis + Celery for async jobs, and an API for summarization. By afternoon, the first crisis hit—pdfplumber was too slow for 15MB PDFs. Switching to PyMuPDF gave a 10-50x speedup. I built a React frontend with Zustand for state management and real-time job polling.
+
+Saturday night, I implemented Celery workers for background processing, chunking documents for embeddings, and integrated an API with retry logic. Sunday morning brought a production disaster—jobs stuck for 38 hours due to OOM-killed API workers from frontend polling storms. Server load spiked to 181.88. The fix? Added rate limiting with slowapi, a frontend circuit breaker, exponential backoff, and reduced gunicorn workers.
+
+Sunday afternoon, I added Celery Beat for auto-cleanup, Prometheus + Grafana + cAdvisor for monitoring, Jenkins CI/CD with health checks and rollback, and fail2ban for security. Final config: 2 workers, 1GB memory limit, 300s timeout, worker recycling at 1000 requests. By Monday, it was live with real users, ~3000 lines of backend code, and 28 passing tests. The lesson? Weekend pressure accelerates learning error handling, monitoring, and resilience.
+
+## The Problem on Saturday Morning
+
+Saturday morning hit me with a real challenge: I needed to implement semantic search across a bunch of PDF documents. FastAPI was my go-to for quick development, while React + TypeScript ensured type safety on the frontend. MongoDB offered the flexible schema I needed, and Redis with Celery handled asynchronous jobs.
+
+But here’s the kicker—pdfplumber was taking over 10 minutes to process a single 15MB PDF. I needed a faster solution, so I switched to PyMuPDF (fitz library), which sped things up by 10 to 50 times. I also built a React frontend using Zustand for state management and real-time job polling.
+
+For data inputs, I used PDF documents and metadata. Integrations included MongoDB for storage and Redis for asynchronous tasks. Key performance indicators? Response time under 2 seconds and processing accuracy above 95%.
+
+## Saturday Afternoon Crisis
+
+So, there I was, deep into my Saturday afternoon coding marathon, when I hit my first major snag. I needed semantic search across PDF documents, and pdfplumber was taking over 10 minutes to process a single 15MB PDF. Not exactly the speed I was hoping for.
+
+**Data Inputs**: I was working with PDF documents and their metadata. The goal was to get quick, accurate results from these hefty files.
+
+**Integrations**: I used PyMuPDF (fitz library) for faster PDF processing, and integrated MongoDB for storage and Redis for handling asynchronous tasks.
+
+**KPIs**: My key performance indicators were clear: response time under 2 seconds and processing accuracy above 95%.
+
+Switching to PyMuPDF sped things up by 10 to 50 times. I also built a React frontend using Zustand for state management and real-time job polling. Crisis averted, for now.
+
+## Saturday Night Implementations
+
+Saturday night was all about getting those Celery workers up and running for background processing. You know how it goes—sometimes you just need to power through. My data inputs included *PDF documents* and *metadata*. For integrations, I used the *Celery* library for task management and the *OpenAI API* for text summarization.
+
+I started by chunking the documents to create embeddings, which made searching more efficient. The OpenAI integration came with retry logic to handle occasional API hiccups. My KPIs were clear: *response time under 2 seconds* and *accuracy above 95%*.
+
+By midnight, I had Celery workers processing tasks in the background, making everything run smoothly. It was a long night, but the system was finally robust enough to handle real-world demands.
+
+## Sunday Morning Disaster
+
+Just when I thought I had everything under control, Sunday morning hit me like a ton of bricks. I woke up to find a job that had been stuck for 38 hours. The culprit? API workers were getting OOM-killed in a death loop due to a frontend polling storm every 2 seconds. The server load skyrocketed to 181.88.
+
+To fix this, I added rate limiting with `slowapi` (30 requests per minute for job status), implemented a frontend circuit breaker to stop after three errors, and introduced exponential backoff (starting from 2 seconds up to 30 seconds max). I also reduced the number of `gunicorn` workers from 4 to 2.
+
+Key data inputs included real-time sensor data and user-generated content. Integrations with RESTful APIs and internal logging systems were crucial. My KPIs focused on keeping response times under 2 seconds and achieving over 95% accuracy.
+
+## Sunday Afternoon Fixes
+
+By Sunday afternoon, I was knee-deep in monitoring and cleanup tasks. I integrated **Prometheus** and **Grafana** for real-time monitoring, giving me insights into system performance and helping me set up alerts. For automated cleanup, I added **Celery Beat** to schedule periodic tasks, ensuring no backlog of old jobs.
+
+**Data Inputs**:
+- Real-time sensor data
+- User-generated content
+
+**Integrations**:
+- RESTful APIs
+- Internal logging systems
+
+**KPIs**:
+- Response time: <2 seconds
+- Accuracy: >95%
+
+I also configured **Jenkins** for CI/CD, enabling smooth deployments with health checks and rollback capabilities. Security was beefed up using **fail2ban** to prevent unauthorized access. With these fixes, the system was more resilient, and I could finally breathe a sigh of relief.
+
+## Final Touches on Sunday Evening
+
+By Sunday evening, I was in the home stretch. I focused on integrating real-time sensor data and user-generated content to ensure the system's responsiveness. I connected these data inputs through RESTful APIs and our internal logging systems, making sure everything was synced perfectly.
+
+To wrap things up, I set key performance indicators (KPIs) to measure success: response time under 2 seconds and accuracy over 95%. These metrics would help us monitor the system's efficiency and reliability.
+
+After a final round of testing and tweaking, I felt confident that the platform was robust and ready for real-world use. It was a weekend well spent, turning challenges into a resilient, high-performing system.
+
+## Lessons Learned by Monday
+
+By Monday, the platform was live, handling real users and real data. We had written around 3000 lines of backend code and passed 28 rigorous tests. The weekend's pressure cooker environment forced us to think on our feet and solve problems rapidly. You quickly learn the importance of error handling, monitoring, and building resilience—skills that might otherwise take months of tutorials to master. It was a crash course in production-grade thinking, and honestly, there's no better way to learn than by doing. Remember, every challenge is a learning opportunity in disguise.
